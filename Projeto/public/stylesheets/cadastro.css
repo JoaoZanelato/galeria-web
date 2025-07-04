@@ -1,0 +1,122 @@
+/* Configuração geral da página */
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: Arial, sans-serif;
+}
+
+/* O container principal que segura a imagem de fundo */
+
+
+.background-container {
+    /* Link para a sua NOVA imagem de cadastro */
+    background-image: url('https://images.pexels.com/photos/2570059/pexels-photo-2570059.jpeg?_gl=1*1h7m3rk*_ga*MTY5NDc0NDU4LjE3NTE2MzU2MjA.*_ga_8JE65Q40S6*czE3NTE2MzU2MjAkbzEkZzEkdDE3NTE2MzYyNDEkajM4JGwwJGgw'); 
+    
+    /* O resto dos estilos de fundo continuam os mesmos */
+    background-size: cover;
+    
+    background-position: center;
+    height: 100vh; 
+    width: 100vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* A caixa de login com o efeito de vidro fosco */
+.login-box {
+    width: 380px;
+    padding: 40px;
+    
+    /* Cor de fundo semi-transparente, essencial para o efeito */
+    background: rgba(255, 255, 255, 0.15);
+    
+    /* O efeito que embaça o que está atrás da caixa */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px); /* Para compatibilidade com Safari */
+
+    /* Outros estilos para deixar bonito */
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    color: white; /* Cor do texto dentro da caixa */
+}
+
+.login-box h1 {
+    margin: 0 0 30px;
+    padding: 0;
+    text-align: center;
+    font-size: 28px;
+}
+
+/* Grupo de input (label + campo) */
+.input-group {
+    position: relative;
+    margin-bottom: 30px;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 10px 0;
+    font-size: 16px;
+    color: white;
+    border: none;
+    border-bottom: 2px solid #fff;
+    outline: none;
+    background: transparent;
+}
+
+.input-group label {
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding: 10px 0;
+    font-size: 16px;
+    color: #fff;
+    pointer-events: none;
+    transition: .5s;
+}
+
+/* Animação para o label subir quando o campo é focado/preenchido */
+.input-group input:focus ~ label,
+.input-group input:valid ~ label {
+    top: -20px;
+    left: 0;
+    color: #ffffff;
+    font-size: 12px;
+}
+
+/* Estilo do botão */
+form button {
+    width: 100%;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.3);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 18px;
+    transition: background-color 0.3s;
+}
+
+form button:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+/* Link para cadastro */
+.signup-link {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 14px;
+}
+
+.signup-link a {
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.signup-link a:hover {
+    text-decoration: underline;
+}

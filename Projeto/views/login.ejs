@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Galeria</title>
+    <link rel="stylesheet" href="/stylesheets/Login.css">
+</head>
+<body>
+    <div class="background-container">
+
+        <div class="login-box">
+            <h1>Login</h1>
+
+            <form action="/cadastro-Login/login" method="POST">
+                
+                <div class="input-group">
+                    <input type="email" name="email" id="email" required>
+                    <label for="email">Email</label>
+                </div>
+
+                <div class="input-group">
+                    <input type="password" name="senha" id="senha" required>
+                    <label for="senha">Senha</label>
+                </div>
+
+                <button type="submit">Entrar</button>
+
+                <div class="signup-link">
+                    Não tem uma conta? <a href="/cadastro-Login/cadastro">Cadastre-se</a>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro - Galeria</title>
+    <link rel="stylesheet" href="/stylesheets/cadastro.css">
+</head>
+<body>
+
+    <div class="background-container">
+        <div class="login-box">
+            <h1>Criar Conta</h1>
+            
+            <form action="/cadastro-Login/cadastro" method="POST">
+                
+                <div class="input-group">
+                    <input type="email" name="email" id="email" required>
+                    <label for="email">Email</label>
+                </div>
+
+                <div class="input-group">
+                    <input type="password" name="senha" id="senha" required>
+                    <label for="senha">Senha</label>
+                </div>
+                
+                <div class="input-group">
+                    <input type="password" name="confirmar_senha" id="confirmar_senha" required>
+                    <label for="confirmar_senha">Confirmar Senha</label>
+                </div>
+
+                <button type="submit">Cadastrar</button>
+
+                <div class="signup-link">
+                    Já tem uma conta? <a href="/cadastro-Login/login">Faça Login</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>

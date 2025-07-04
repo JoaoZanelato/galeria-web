@@ -1,0 +1,123 @@
+/* Configuração geral da página */
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: Arial, sans-serif;
+}
+
+/* O container principal que segura a imagem de fundo */
+.background-container {
+    /* Link direto para a imagem do Pexels que você escolheu para o LOGIN */
+    background-image: url('https://images.pexels.com/photos/2123337/pexels-photo-2123337.jpeg'); 
+    
+    /* Faz a imagem cobrir toda a tela */
+    background-size: cover;
+    background-position: center;
+    
+    /* Garante que o container ocupe toda a tela */
+    height: 100vh; 
+    width: 100vw;
+
+    /* Centraliza a caixa de login no meio da tela */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* A caixa de login com o efeito de vidro fosco */
+.login-box {
+    width: 380px;
+    padding: 40px;
+    
+    /* Cor de fundo semi-transparente */
+    background: rgba(0, 0, 0, 0.25); /* Um pouco mais escuro para o texto branco se destacar */
+    
+    /* O efeito que embaça o fundo */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px); /* Para compatibilidade */
+
+    /* Estilos para a borda e sombra */
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    color: white; 
+}
+
+.login-box h1 {
+    margin: 0 0 30px;
+    padding: 0;
+    text-align: center;
+    font-size: 28px;
+}
+
+/* Grupo de input (label + campo) para a animação */
+.input-group {
+    position: relative;
+    margin-bottom: 30px;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 10px 0;
+    font-size: 16px;
+    color: white;
+    border: none;
+    border-bottom: 2px solid #fff;
+    outline: none;
+    background: transparent;
+}
+
+.input-group label {
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding: 10px 0;
+    font-size: 16px;
+    color: #fff;
+    pointer-events: none;
+    transition: .5s;
+}
+
+/* Animação para o label subir */
+.input-group input:focus ~ label,
+.input-group input:valid ~ label {
+    top: -20px;
+    left: 0;
+    color: #ffffff;
+    font-size: 12px;
+}
+
+/* Estilo do botão */
+form button {
+    width: 100%;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.3);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 18px;
+    transition: background-color 0.3s;
+}
+
+form button:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+/* Link para cadastro */
+.signup-link {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 14px;
+}
+
+.signup-link a {
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.signup-link a:hover {
+    text-decoration: underline;
+}

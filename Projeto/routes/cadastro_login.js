@@ -1,16 +1,19 @@
 const express = require('express');
 const router = express.Router();
 
-/* GET para a página de cadastro (exemplo). */
+/* Rota GET para a página de cadastro. */
 router.get('/cadastro', function(req, res, next) {
-  res.send('Página de Cadastro');
+  // O correto é usar res.render() para mostrar o arquivo EJS.
+  res.render('cadastro');
 });
 
-/* GET para a página de login (exemplo). */
+/* Rota GET para a página de login. */
 router.get('/login', function(req, res, next) {
-  res.send('Página de Login');
+  // O correto é usar res.render() para mostrar o arquivo EJS.
+  res.render('login');
 });
 
-// Adicione aqui as rotas POST para processar o cadastro e o login.
+// As rotas POST (para quando o usuário clicar em "Cadastrar" ou "Entrar")
+// serão adicionadas depois.
 
 module.exports = router;
