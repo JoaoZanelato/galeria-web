@@ -1,9 +1,21 @@
-
 -- init.sql
 
 -- Opcional: Desativar a verificação de chaves estrangeiras temporariamente
 -- Isso pode ser útil ao criar tabelas com dependências circulares, mas use com cautela.
 -- SET FOREIGN_KEY_CHECKS = 0;
+
+-- Ordem de DROP TABLE é importante para evitar erros de chave estrangeira
+DROP TABLE IF EXISTS COMPARTILHAMENTOS;
+DROP TABLE IF EXISTS IMAGEM_USUARIOS;
+DROP TABLE IF EXISTS TAG_USUARIOS;
+DROP TABLE IF EXISTS IMAGEM_ALBUNS;
+DROP TABLE IF EXISTS IMAGEM_TAGS;
+DROP TABLE IF EXISTS ALBUNS;
+DROP TABLE IF EXISTS IMAGENS;
+DROP TABLE IF EXISTS CATEGORIAS;
+DROP TABLE IF EXISTS TAGS;
+DROP TABLE IF EXISTS AMIZADES;
+DROP TABLE IF EXISTS USUARIOS;
 
 
 -- 1. Tabela: USUARIOS
@@ -139,11 +151,6 @@ CREATE TABLE COMPARTILHAMENTOS (
     FOREIGN KEY (UsuarioDestinatarioID) REFERENCES USUARIOS(UsuarioID) ON DELETE CASCADE,
     FOREIGN KEY (ImagemID) REFERENCES IMAGENS(ImagemID) ON DELETE SET NULL,
     FOREIGN KEY (AlbumID) REFERENCES ALBUNS(AlbumID) ON DELETE SET NULL,
-    -- Restrição para garantir que apenas um item (imagem OU álbum) seja compartilhado por registro
-    CONSTRAINT chk_compartilhamento_item_type CHECK (
-        (ImagemID IS NOT NULL AND AlbumID IS NULL) OR
-        (ImagemID IS NULL AND AlbumID IS NOT NULL)
-    ),
     -- Garante que um remetente não compartilhe o MESMO item (imagem ou álbum) com o MESMO destinatário múltiplas vezes
     UNIQUE (UsuarioRemetenteID, UsuarioDestinatarioID, ImagemID, AlbumID)
 );
