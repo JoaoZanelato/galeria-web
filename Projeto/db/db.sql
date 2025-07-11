@@ -159,8 +159,6 @@ CREATE TABLE IMAGEM_ALBUNS (
 );
 
 
--- 9. Tabela: COMPARTILHAMENTOS
--- Registra o compartilhamento de imagens ou álbuns entre usuários.
 CREATE TABLE COMPARTILHAMENTOS (
     CompartilhamentoID    INT PRIMARY KEY AUTO_INCREMENT,
     UsuarioRemetenteID    INT NOT NULL,
@@ -168,8 +166,8 @@ CREATE TABLE COMPARTILHAMENTOS (
     ImagemID              INT, -- Pode ser NULO se estiver compartilhando um álbum
     AlbumID               INT, -- Pode ser NULO se estiver compartilhando uma imagem
     DataCompartilhamento  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    -- ENUM para definir as permissões de forma controlada.
-    Permissao             ENUM('visualizar', 'baixar', 'editar') NOT NULL DEFAULT 'visualizar',
+    -- ENUM atualizado para as novas permissões.
+    Permissao             ENUM('compartilhado', 'editavel') NOT NULL DEFAULT 'compartilhado',
     FOREIGN KEY (UsuarioRemetenteID) REFERENCES USUARIOS(UsuarioID) ON DELETE CASCADE,
     FOREIGN KEY (UsuarioDestinatarioID) REFERENCES USUARIOS(UsuarioID) ON DELETE CASCADE,
     FOREIGN KEY (ImagemID) REFERENCES IMAGENS(ImagemID) ON DELETE CASCADE,

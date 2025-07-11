@@ -58,7 +58,6 @@ router.get('/upload', checkAuth, async (req, res) => {
 
 /* POST Rota para processar o upload da imagem */
 router.post('/upload', checkAuth, upload.single('imagem'), async (req, res, next) => {
-    // Código de upload existente... (sem alterações)
     const { descricao, tipoAlbum, album_existente, album_novo_nome, album_novo_desc, tags, categoria_id } = req.body;
     const { path: url, filename } = req.file;
     const usuarioID = req.session.user.id;
@@ -98,33 +97,151 @@ router.post('/upload', checkAuth, upload.single('imagem'), async (req, res, next
         res.redirect(`/albuns/${albumId}`);
     } catch (err) {
         await connection.rollback();
-        // Lógica de erro existente...
         next(err);
     } finally {
         if (connection) connection.release();
     }
 });
 
-// --- Rotas de Edição da imagem --- (sem alterações)
-router.get("/imagem/:id/edit", checkAuth, async (req, res, next) => { /* ... código existente ... */ });
-router.post('/imagem/:id/edit', checkAuth, async (req, res, next) => { /* ... código existente ... */ });
-router.post('/imagem/:id/delete', checkAuth, async (req, res, next) => { /* ... código existente ... */ });
+// --- Rotas de Edição e Exclusão da imagem ---
+
+// GET: Rota para exibir o formulário de edição de uma imagem
+router.get("/imagem/:id/edit", checkAuth, async (req, res, next) => {
+    const imagemId = req.params.id;
+    const usuarioId = req.session.user.id;
+
+    try {
+        const [imagemResult] = await db.query('SELECT * FROM IMAGENS WHERE ImagemID = ? AND UsuarioID = ?', [imagemId, usuarioId]);
+
+        if (imagemResult.length === 0) {
+            return res.status(403).send('Você não tem permissão para editar esta imagem.');
+        }
+
+        const [categorias] = await db.query('SELECT * FROM CATEGORIAS ORDER BY Nome ASC');
+        const [tagsAssociadas] = await db.query(
+            `SELECT t.Nome FROM TAGS t
+             JOIN IMAGEM_TAGS it ON t.TagID = it.TagID
+             WHERE it.ImagemID = ?`,
+            [imagemId]
+        );
+
+        res.render('edit-image', {
+            user: req.session.user,
+            imagem: imagemResult[0],
+            categorias: categorias,
+            tagsAtuais: tagsAssociadas.map(t => t.Nome).join(', '),
+            error: null
+        });
+
+    } catch (err) {
+        console.error("Erro ao carregar página de edição de imagem:", err);
+        next(err);
+    }
+});
+
+// POST: Rota para processar a atualização da imagem
+router.post('/imagem/:id/edit', checkAuth, async (req, res, next) => {
+    const imagemId = req.params.id;
+    const usuarioId = req.session.user.id;
+    const { descricao, categoria_id, tags } = req.body;
+    
+    const connection = await db.getConnection();
+
+    try {
+        await connection.beginTransaction();
+
+        const [updateResult] = await connection.query(
+            'UPDATE IMAGENS SET Descricao = ?, CategoriaID = ?, DataModificacao = NOW() WHERE ImagemID = ? AND UsuarioID = ?',
+            [descricao, categoria_id || null, imagemId, usuarioId]
+        );
+
+        if (updateResult.affectedRows === 0) {
+            throw new Error('Você não tem permissão para editar esta imagem ou a imagem não foi encontrada.');
+        }
+        
+        await connection.query('DELETE FROM IMAGEM_TAGS WHERE ImagemID = ?', [imagemId]);
+        if (tags && tags.trim() !== '') {
+            const tagsArray = tags.split(',').map(tag => tag.trim()).filter(tag => tag !== '');
+            for (const tagName of tagsArray) {
+                let [existingTags] = await connection.query('SELECT TagID FROM TAGS WHERE Nome = ? AND UsuarioID = ?', [tagName, usuarioId]);
+                let tagId;
+                if (existingTags.length > 0) {
+                    tagId = existingTags[0].TagID;
+                } else {
+                    const [newTagResult] = await connection.query('INSERT INTO TAGS (Nome, UsuarioID) VALUES (?, ?)', [tagName, usuarioId]);
+                    tagId = newTagResult.insertId;
+                }
+                await connection.query('INSERT INTO IMAGEM_TAGS (ImagemID, TagID) VALUES (?, ?)', [imagemId, tagId]);
+            }
+        }
+
+        await connection.commit();
+        
+        const [albumLink] = await db.query('SELECT AlbumID FROM IMAGEM_ALBUNS WHERE ImagemID = ? LIMIT 1', [imagemId]);
+        if (albumLink.length > 0) {
+            res.redirect(`/albuns/${albumLink[0].AlbumID}`);
+        } else {
+            res.redirect('/');
+        }
+
+    } catch (err) {
+        await connection.rollback();
+        console.error("Erro ao atualizar a imagem:", err);
+        next(err);
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// POST: Rota para apagar uma imagem
+router.post('/imagem/:id/delete', checkAuth, async (req, res, next) => {
+    const imagemId = req.params.id;
+    const usuarioId = req.session.user.id;
+    
+    const connection = await db.getConnection();
+
+    try {
+        await connection.beginTransaction();
+        
+        const [imagemResult] = await connection.query('SELECT NomeArquivo FROM IMAGENS WHERE ImagemID = ? AND UsuarioID = ?', [imagemId, usuarioId]);
+
+        if (imagemResult.length === 0) {
+            await connection.rollback();
+            return res.status(403).send('Você não tem permissão para apagar esta imagem.');
+        }
+
+        const nomeArquivo = imagemResult[0].NomeArquivo;
+
+        await cloudinary.uploader.destroy(nomeArquivo);
+        await connection.query('DELETE FROM IMAGENS WHERE ImagemID = ?', [imagemId]);
+
+        await connection.commit();
+
+        const redirectUrl = req.headers.referer || '/';
+        res.redirect(redirectUrl);
+
+    } catch (err) {
+        await connection.rollback();
+        console.error("Erro ao apagar a imagem:", err);
+        next(err);
+    } finally {
+        if(connection) connection.release();
+    }
+});
 
 
 // ===================================================================
-//      NOVAS ROTAS PARA COMPARTILHAMENTO DE IMAGEM INDIVIDUAL
+//      ROTAS PARA COMPARTILHAMENTO DE IMAGEM INDIVIDUAL
 // ===================================================================
 
 /**
  * GET Rota para exibir a página de compartilhamento de uma imagem.
- * Apenas o dono da imagem pode acessar.
  */
 router.get('/imagem/:id/share', checkAuth, async (req, res, next) => {
     const imagemId = req.params.id;
     const ownerId = req.session.user.id;
 
     try {
-        // 1. Busca a imagem e confirma se o usuário logado é o dono
         const [imagemResult] = await db.query(
             'SELECT ImagemID, Url, Descricao FROM IMAGENS WHERE ImagemID = ? AND UsuarioID = ?',
             [imagemId, ownerId]
@@ -135,7 +252,6 @@ router.get('/imagem/:id/share', checkAuth, async (req, res, next) => {
         }
         const imagem = imagemResult[0];
 
-        // 2. Busca a lista de amigos do usuário (dono da imagem)
         const [amigos] = await db.query(
             `SELECT u.UsuarioID, u.NomeUsuario FROM AMIZADES a
              JOIN USUARIOS u ON (a.UsuarioSolicitanteID = u.UsuarioID OR a.UsuarioAceitanteID = u.UsuarioID)
@@ -143,7 +259,6 @@ router.get('/imagem/:id/share', checkAuth, async (req, res, next) => {
             [ownerId, ownerId, ownerId]
         );
 
-        // 3. Busca os compartilhamentos que já existem para esta imagem
         const [compartilhamentosExistentes] = await db.query(
             `SELECT c.UsuarioDestinatarioID, c.Permissao FROM COMPARTILHAMENTOS c
              WHERE c.ImagemID = ?`,
@@ -168,28 +283,24 @@ router.get('/imagem/:id/share', checkAuth, async (req, res, next) => {
 
 /**
  * POST Rota para processar o compartilhamento de uma imagem.
- * Apenas o dono da imagem pode usar.
  */
 router.post('/imagem/:id/share', checkAuth, async (req, res, next) => {
     const imagemId = req.params.id;
     const ownerId = req.session.user.id;
-    const { compartilhamentos } = req.body; // Espera um array de { friendId, permissao }
+    const { compartilhamentos } = req.body;
 
     const connection = await db.getConnection();
     try {
         await connection.beginTransaction();
 
-        // 1. Confirma novamente se o usuário é o dono
         const [imagemCheck] = await connection.query('SELECT ImagemID FROM IMAGENS WHERE ImagemID = ? AND UsuarioID = ?', [imagemId, ownerId]);
         if (imagemCheck.length === 0) {
             await connection.rollback();
             return res.status(403).send('Você não tem permissão para gerenciar esta imagem.');
         }
 
-        // 2. Limpa os compartilhamentos antigos para esta imagem
         await connection.query('DELETE FROM COMPARTILHAMENTOS WHERE ImagemID = ?', [imagemId]);
 
-        // 3. Insere os novos compartilhamentos, se houver algum
         if (compartilhamentos && Array.isArray(compartilhamentos)) {
             for (const comp of compartilhamentos) {
                 if (comp.friendId && comp.permissao) {
@@ -203,12 +314,11 @@ router.post('/imagem/:id/share', checkAuth, async (req, res, next) => {
 
         await connection.commit();
         
-        // Redireciona de volta para o álbum onde a imagem está
         const [albumLink] = await db.query('SELECT AlbumID FROM IMAGEM_ALBUNS WHERE ImagemID = ? LIMIT 1', [imagemId]);
         if (albumLink.length > 0) {
             res.redirect(`/albuns/${albumLink[0].AlbumID}`);
         } else {
-            res.redirect('/'); // Fallback para o dashboard
+            res.redirect('/');
         }
 
     } catch (err) {
