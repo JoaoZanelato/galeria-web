@@ -166,3 +166,16 @@ a:hover {
   color: #bbb !important;
   text-decoration: none !important;
 }
+/* Estilo do botão de sucesso (verde, para upload) */
+.btn-success {
+    background-color: #28a745;
+    color: white;
+}
+
+/* Efeito no botão de sucesso ao passar o mouse */
+.btn-success:hover {
+    background-color: #218838;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.2);
+    color: white;
+}

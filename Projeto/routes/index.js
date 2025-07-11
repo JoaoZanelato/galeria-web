@@ -14,43 +14,32 @@ function checkAuth(req, res, next) {
 router.get('/', async function(req, res, next) {
     const user = req.session.user;
 
-    // Se não houver usuário logado, renderiza a landing page com dados vazios garantidos.
+    // Se não houver usuário logado, renderiza a landing page.
     if (!user) {
         return res.render('index', {
             title: 'Bem-vindo à Galeria Web',
             user: null,
             albuns: [],
             categorias: [],
-            tags: [],
-            albunsCompartilhados: []
+            tags: []
         });
     }
 
-    // Se houver usuário, busca todos os dados para o dashboard.
+    // Se houver usuário, busca os dados para o dashboard.
     try {
-        // Assegura que todas as consultas retornem um array, mesmo que vazio.
         const [albuns] = await db.query('SELECT * FROM ALBUNS WHERE UsuarioID = ? ORDER BY DataCriacao DESC', [user.id]);
         const [categorias] = await db.query('SELECT * FROM CATEGORIAS ORDER BY Nome ASC');
         const [tags] = await db.query('SELECT * FROM TAGS WHERE UsuarioID = ? ORDER BY Nome ASC', [user.id]);
 
-        const [albunsCompartilhados] = await db.query(
-            `SELECT DISTINCT a.*, u.NomeUsuario AS DonoDoAlbum
-             FROM ALBUNS a
-             JOIN COMPARTILHAMENTOS c ON a.AlbumID = c.AlbumID
-             JOIN USUARIOS u ON a.UsuarioID = u.UsuarioID
-             WHERE c.UsuarioDestinatarioID = ? AND c.Permissao IN ('visualizar', 'editar')
-             ORDER BY a.DataCriacao DESC`,
-            [user.id]
-        );
+        // A consulta e a variável para 'albunsCompartilhados' foram removidas.
 
-        // Renderiza a página do dashboard passando todos os dados obtidos.
+        // Renderiza a página do dashboard apenas com os dados necessários.
         res.render('index', {
             title: 'Sua Galeria',
             user: user,
-            albuns: albuns || [], // Garante que é um array
-            categorias: categorias || [], // Garante que é um array
-            tags: tags || [], // Garante que é um array
-            albunsCompartilhados: albunsCompartilhados || [] // Garante que é um array
+            albuns: albuns || [],
+            categorias: categorias || [],
+            tags: tags || []
         });
     } catch (err) {
         console.error("Erro fatal ao carregar o dashboard:", err);

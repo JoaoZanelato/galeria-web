@@ -107,28 +107,6 @@
                     <p>Você ainda não criou nenhum álbum. Comece fazendo um upload!</p>
                 </div>
             <% } %>
-
-            <h2 style="margin-top: 50px;">Álbuns Compartilhados Comigo</h2>
-            <% if (albunsCompartilhados && albunsCompartilhados.length > 0) { %>
-                <div class="albuns-grid">
-                    <% albunsCompartilhados.forEach(function(album) { %>
-                        <a href="/albuns/<%= album.AlbumID %>" class="album-card">
-                            <div class="album-icon">
-                                <i class="fas fa-share-alt"></i>
-                            </div>
-                            <div class="album-info">
-                                <h3><%= album.Nome %></h3>
-                                <p>Compartilhado por: <strong><%= album.DonoDoAlbum %></strong></p>
-                            </div>
-                        </a>
-                    <% }); %>
-                </div>
-            <% } else { %>
-                <div class="empty-state">
-                    <p>Nenhum álbum foi compartilhado com você ainda.</p>
-                </div>
-            <% } %>
-
         </main>
         <%- include('partials/footer') %>
 

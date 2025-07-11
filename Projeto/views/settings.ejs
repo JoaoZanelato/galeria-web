@@ -1,68 +1,29 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <title>Configurações</title>
-    
-    <!-- CSS principal do projeto -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurações - Galeria Web</title>
     <link rel="stylesheet" href="/stylesheets/style.css">
-
-    <!-- Estilo específico só pra essa tela -->
-    <style>
-        /* Container geral das configurações */
-        .settings-container {
-            max-width: 800px;
-            margin: 40px auto;
-            padding: 20px;
-        }
-
-        /* Bloco que mostra o alerta de apagar conta */
-        .delete-account-section {
-            background-color: #fff;
-            border: 1px solid #dc3545; /* Vermelho pra dar aquele aviso visual */
-            padding: 25px;
-            border-radius: 8px;
-            margin-top: 40px;
-        }
-
-        .delete-account-section h3 {
-            margin-top: 0;
-            color: #dc3545; /* Título em vermelho pra chamar atenção */
-        }
-    </style>
+    <link rel="stylesheet" href="/stylesheets/settings.css">
 </head>
 <body>
-
-    <!-- Cabeçalho padrão do site (menu, etc) -->
     <%- include('partials/header') %>
 
     <main class="settings-container">
-        <!-- Título principal da página -->
-        <h1>Configurações da Conta</h1>
+        <div class="settings-box">
+            <h1>Configurações da Conta</h1>
+            <p>Gerencie suas preferências e informações da sua conta.</p>
 
-        <!-- Saudação com o nome do usuário logado -->
-        <p>Olá, <%= user.nome %>.</p>
-        
-        <hr> <!-- Separador visual -->
+            <div class="settings-actions">
+                <a href="/auth/logout" class="btn btn-secondary action-btn">Sair (Logout)</a>
 
-        <!-- Seção de apagar conta (parte mais sensível da tela) -->
-        <div class="delete-account-section">
-            <h3>Apagar Conta</h3>
-            <p style="color: var(--secondary-text-color);">
-                Atenção: Esta ação é permanente e não pode ser desfeita.
-                Todos os seus álbuns e imagens serão permanentemente excluídos.
-            </p>
-            
-            <!-- Formulário de exclusão com confirmação na submissão -->
-            <form action="/auth/delete" method="POST"
-                onsubmit="return confirm('Tem certeza ABSOLUTA que deseja apagar a sua conta? Todos os seus dados serão perdidos para sempre.');">
-                
-                <!-- Botão de exclusão, com classe de perigo pra deixar vermelho -->
-                <button type="submit" class="btn btn-danger">Eu entendo, apagar a minha conta</button>
-            </form>
+                <form action="/auth/delete" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir sua conta? Esta ação é irreversível e todas as suas imagens e álbuns serão perdidos.');">
+                    <button type="submit" class="btn btn-danger action-btn">Excluir Conta Permanentemente</button>
+                </form>
+            </div>
         </div>
     </main>
 
-    <!-- Rodapé padrão do site -->
-    <%- include('partials/footer') %>
 </body>
 </html>

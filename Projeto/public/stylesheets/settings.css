@@ -1,0 +1,59 @@
+/* Container principal da página de configurações */
+.settings-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 60px 20px;
+    min-height: calc(100vh - 200px); /* Ajuste a altura conforme o tamanho do seu header/footer */
+}
+
+/* A caixa branca central */
+.settings-box {
+    width: 100%;
+    max-width: 600px;
+    padding: 40px;
+    background: var(--surface-color);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    text-align: center;
+    border: 1px solid var(--border-color);
+}
+
+/* Título da página */
+.settings-box h1 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--primary-text-color);
+}
+
+/* Parágrafo descritivo */
+.settings-box p {
+    margin-bottom: 40px;
+    font-size: 1.1rem;
+    color: var(--secondary-text-color);
+}
+
+/* Container para os botões de ação */
+.settings-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+}
+
+/* Estilo dos botões e formulários dentro da caixa */
+.settings-actions .action-btn {
+    width: 100%;
+    max-width: 350px; /* Limita a largura dos botões */
+    padding: 12px 20px;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.settings-actions form {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
