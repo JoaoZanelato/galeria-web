@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <title>Configurações</title>
+    
+    <!-- CSS principal do projeto -->
+    <link rel="stylesheet" href="/stylesheets/style.css">
+
+    <!-- Estilo específico só pra essa tela -->
+    <style>
+        /* Container geral das configurações */
+        .settings-container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        /* Bloco que mostra o alerta de apagar conta */
+        .delete-account-section {
+            background-color: #fff;
+            border: 1px solid #dc3545; /* Vermelho pra dar aquele aviso visual */
+            padding: 25px;
+            border-radius: 8px;
+            margin-top: 40px;
+        }
+
+        .delete-account-section h3 {
+            margin-top: 0;
+            color: #dc3545; /* Título em vermelho pra chamar atenção */
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Cabeçalho padrão do site (menu, etc) -->
+    <%- include('partials/header') %>
+
+    <main class="settings-container">
+        <!-- Título principal da página -->
+        <h1>Configurações da Conta</h1>
+
+        <!-- Saudação com o nome do usuário logado -->
+        <p>Olá, <%= user.nome %>.</p>
+        
+        <hr> <!-- Separador visual -->
+
+        <!-- Seção de apagar conta (parte mais sensível da tela) -->
+        <div class="delete-account-section">
+            <h3>Apagar Conta</h3>
+            <p style="color: var(--secondary-text-color);">
+                Atenção: Esta ação é permanente e não pode ser desfeita.
+                Todos os seus álbuns e imagens serão permanentemente excluídos.
+            </p>
+            
+            <!-- Formulário de exclusão com confirmação na submissão -->
+            <form action="/auth/delete" method="POST"
+                onsubmit="return confirm('Tem certeza ABSOLUTA que deseja apagar a sua conta? Todos os seus dados serão perdidos para sempre.');">
+                
+                <!-- Botão de exclusão, com classe de perigo pra deixar vermelho -->
+                <button type="submit" class="btn btn-danger">Eu entendo, apagar a minha conta</button>
+            </form>
+        </div>
+    </main>
+
+    <!-- Rodapé padrão do site -->
+    <%- include('partials/footer') %>
+</body>
+</html>

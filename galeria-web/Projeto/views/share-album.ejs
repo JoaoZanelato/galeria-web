@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <%- include('partials/header', {
+        title: 'Compartilhar: ' + album.Nome,
+        user: user,
+        tags: [],
+        categorias: [],
+        page_css: 'dashboard' // usa o CSS do dashboard ou troca se quiser um visual diferente
+    }) %>
+
+    <style>
+        /* Estilo do container da tela de compartilhamento */
+        .share-management-container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 30px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .share-management-container h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+
+        /* Estilo da lista de amigos com opções de permissão */
+        .share-form .friend-share-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .share-form .friend-share-item:last-child {
+            border-bottom: none;
+        }
+
+        .share-form .friend-share-item span {
+            font-size: 1.1em;
+            color: #555;
+            flex-grow: 1;
+        }
+
+        /* Caixinha de seleção de permissão */
+        .share-form .friend-share-item select {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            width: 200px;
+        }
+
+        /* Botão de salvar permissões */
+        .share-form .btn-primary {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin-top: 30px;
+            font-size: 1.1em;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .share-form .btn-primary:hover {
+            background-color: #0056b3;
+        }
+
+        /* Link de voltar pro álbum */
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Caso o usuário não tenha amigos ainda */
+        .empty-friends-state {
+            text-align: center;
+            padding: 20px;
+            color: #777;
+            border: 1px dashed #ddd;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <main class="dashboard-main container">
+        <div class="share-management-container">
+            <h1>Compartilhar Álbum: <%= album.Nome %></h1>
+            <p style="text-align: center; color: #666; margin-bottom: 25px;">Selecione amigos e defina as permissões para este álbum.</p>
+
+            <!-- Se der erro ou sucesso, exibe aqui -->
+            <% if (typeof error !== 'undefined' && error) { %>
+                <p class="status-message error" style="text-align: center;"><%= error %></p>
+            <% } %>
+            <% if (typeof success !== 'undefined' && success) { %>
+                <p class="status-message success" style="text-align: center;"><%= success %></p>
+            <% } %>
+
+            <!-- Formulário com os amigos pra definir as permissões -->
+            <form id="shareForm" class="share-form">
+                <input type="hidden" name="albumId" value="<%= album.AlbumID %>">
+
+                <div id="friendsListForSharing">
+                    <% if (amigosDoDono && amigosDoDono.length > 0) { %>
+                        <% amigosDoDono.forEach(amigo => { %>
+                            <%
+                                // Checa se já tem compartilhamento com esse amigo
+                                const currentPermissao = compartilhamentosExistentes.find(c => c.UsuarioDestinatarioID === amigo.UsuarioID);
+                            %>
+                            <div class="friend-share-item">
+                                <span><%= amigo.NomeUsuario %></span>
+                                <!-- Select de permissão pro amigo -->
+                                <select name="permissao_<%= amigo.UsuarioID %>" data-friend-id="<%= amigo.UsuarioID %>" class="form-control">
+                                    <option value="">Não Compartilhar</option>
+                                    <option value="visualizar" <%= currentPermissao && currentPermissao.Permissao === 'visualizar' ? 'selected' : '' %>>Visualizar</option>
+                                    <option value="editar" <%= currentPermissao && currentPermissao.Permissao === 'editar' ? 'selected' : '' %>>Editar (Ver e Adicionar/Deletar)</option>
+                                </select>
+                            </div>
+                        <% }) %>
+                    <% } else { %>
+                        <!-- Caso não tenha amigos -->
+                        <div class="empty-friends-state">
+                            <p>Você ainda não tem amigos para compartilhar.</p>
+                            <a href="/amizades" class="btn btn-secondary">Adicionar Amigos</a>
+                        </div>
+                    <% } %>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Salvar Permissões de Compartilhamento</button>
+            </form>
+
+            <a href="/albuns/<%= album.AlbumID %>" class="back-link">Voltar para o Álbum</a>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const shareForm = document.getElementById('shareForm');
+
+            if (shareForm) {
+                shareForm.addEventListener('submit', async function(event) {
+                    event.preventDefault(); // Evita reload da página
+
+                    const albumId = shareForm.querySelector('input[name="albumId"]').value;
+                    const selects = shareForm.querySelectorAll('select[data-friend-id]');
+                    const compartilhamentos = [];
+
+                    // Monta lista de permissões dos amigos
+                    selects.forEach(select => {
+                        const friendId = select.dataset.friendId;
+                        const permissao = select.value;
+
+                        if (permissao) {
+                            compartilhamentos.push({
+                                friendId: parseInt(friendId),
+                                permissao: permissao
+                            });
+                        }
+                    });
+
+                    try {
+                        const response = await fetch(`/albuns/${albumId}/share`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ compartilhamentos: compartilhamentos })
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            alert(result.message); // Mostra retorno do servidor
+                        } else {
+                            alert('Erro ao salvar permissões: ' + result.message);
+                        }
+                    } catch (error) {
+                        console.error('Erro na requisição de compartilhamento:', error);
+                        alert('Erro de comunicação com o servidor ao compartilhar álbum.');
+                    }
+                });
+            }
+        });
+    </script>
+
+    <%- include('partials/footer') %>
+</body>
+</html>

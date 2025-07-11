@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <title>Editar Imagem</title> <!-- Título da aba do navegador -->
+    <link rel="stylesheet" href="/stylesheets/style.css"> <!-- CSS geral da aplicação -->
+    <link rel="stylesheet" href="/stylesheets/upload.css"> <!-- CSS específico para upload/edição -->
+</head>
+<body>
+
+    <!-- Inclusão do header com dados dinâmicos: usuário, tags e categorias -->
+    <%- include('partials/header', { 
+        user: user, 
+        tags: header_tags, 
+        categorias: header_categorias 
+    }) %>
+
+    <div class="upload-container-wrapper">
+        <div class="upload-box">
+            <h1>Editar Imagem</h1>
+            
+            <!-- Pré-visualização da imagem atual -->
+            <img src="<%= imagem.Url %>" alt="Pré-visualização" 
+                 style="max-width: 200px; margin: 0 auto 20px; display: block; border-radius: 8px;">
+            
+            <!-- Formulário para editar a imagem, enviado via POST -->
+            <form action="/galeria/imagem/<%= imagem.ImagemID %>/edit" method="POST">
+                
+                <!-- Campo para editar a descrição da imagem -->
+                <div class="form-group">
+                    <label for="descricao">Descrição</label>
+                    <textarea id="descricao" name="descricao" class="form-control" rows="4"><%= imagem.Descricao %></textarea>
+                </div>
+
+                <!-- Seleção da categoria atual da imagem -->
+                <div class="form-group">
+                    <label for="categoria_id">Categoria</label>
+                    <select id="categoria_id" name="categoria_id" class="form-control">
+                        <option value="">-- Nenhuma --</option>
+                        <% categorias.forEach(function(categoria) { %>
+                            <option value="<%= categoria.CategoriaID %>" 
+                                <%= (imagem.CategoriaID == categoria.CategoriaID) ? 'selected' : '' %>>
+                                <%= categoria.Nome %>
+                            </option>
+                        <% }); %>
+                    </select>
+                </div>
+
+                <!-- Campo para editar as tags, separadas por vírgula -->
+                <div class="form-group">
+                    <label for="tags">Tags (separadas por vírgula)</label>
+                    <%# 'tags_string' é uma string formatada contendo as tags atuais %>
+                    <input type="text" id="tags" name="tags" class="form-control" value="<%= tags_string %>">
+                </div>
+                
+                <!-- Botão para enviar as alterações -->
+                <button type="submit" class="submit-btn" style="background-color: #007bff;">Salvar Alterações</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Inclusão do footer padrão -->
+    <%- include('partials/footer') %>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<%- include('partials/header', { 
+    title: 'Adicionar Imagem', 
+    user: user, 
+    tags: [],
+    categorias: categorias,
+    page_css: 'upload' 
+}) %> <!-- Cabeçalho padrão com título e estilos da página -->
+
+<div class="upload-container-wrapper">
+    <div class="upload-box">
+        <h1>Adicionar Nova Imagem</h1>
+
+        <% if (typeof error !== 'undefined' && error && error.length > 0) { %>
+            <!-- Se tiver erro, mostra aqui -->
+            <p class="auth-error"><%= error %></p>
+        <% } %>
+
+        <!-- Formulário pra enviar imagem -->
+        <form action="/galeria/upload" method="POST" enctype="multipart/form-data">
+
+            <!-- Área pra arrastar ou clicar e escolher imagem -->
+            <label for="imagem" class="drop-zone">
+                <span class="drop-zone__text">Arraste a imagem aqui ou clique para selecionar</span>
+                <input type="file" name="imagem" id="imagem" class="drop-zone__input" required>
+            </label>
+
+            <!-- Campo pra digitar descrição da imagem -->
+            <div class="form-group">
+                <label for="descricao">Descrição</label>
+                <textarea name="descricao" id="descricao" rows="3" class="form-control" placeholder="Ex: Pôr do sol na praia..."></textarea>
+            </div>
+            
+            <!-- Campo pra tags, separadas por vírgula -->
+            <div class="form-group">
+                <label for="tags">Tags (separadas por vírgula)</label>
+                <input type="text" name="tags" id="tags" class="form-control" placeholder="Ex: viagem, praia, 2025">
+            </div>
+
+            <!-- Seleção de categoria, caso tenha -->
+            <div class="form-group">
+                <label for="categoria_id">Categoria</label>
+                <select name="categoria_id" id="categoria_id" class="form-control">
+                    <option value="">-- Nenhuma --</option>
+                    <% categorias.forEach(categoria => { %>
+                        <option value="<%= categoria.CategoriaID %>"><%= categoria.Nome %></option>
+                    <% }) %>
+                </select>
+            </div>
+
+            <hr class="separator">
+
+            <!-- Escolher se vai usar álbum já criado ou criar novo -->
+            <div class="form-group">
+                <label>Álbum</label>
+                <div class="radio-group">
+                    <label>
+                        <input type="radio" name="tipoAlbum" value="existente" checked> Usar Existente
+                    </label>
+                    <label>
+                        <input type="radio" name="tipoAlbum" value="novo"> Criar Novo
+                    </label>
+                </div>
+
+                <!-- Lista de álbuns existentes -->
+                <select name="album_existente" id="album_existente" class="form-control">
+                    <% if (albuns.length > 0) { %>
+                        <% albuns.forEach(album => { %>
+                            <option value="<%= album.AlbumID %>"><%= album.Nome %></option>
+                        <% }) %>
+                    <% } else { %>
+                        <option value="" disabled>Nenhum álbum encontrado</option>
+                    <% } %>
+                </select>
+
+                <!-- Campos aparecem só se escolher criar novo álbum -->
+                <div id="novo_album_fields" style="display: none; margin-top: 15px;">
+                    <input type="text" name="album_novo_nome" class="form-control" placeholder="Nome do novo álbum" style="margin-bottom: 10px;">
+                    <textarea name="album_novo_desc" class="form-control" placeholder="Descrição do novo álbum"></textarea>
+                </div>
+            </div>
+
+            <!-- Botão pra enviar tudo -->
+            <button type="submit" class="submit-btn">Enviar Imagem</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Pega os radios e campos de álbum
+        const radioButtons = document.querySelectorAll('input[name="tipoAlbum"]');
+        const novoAlbumFields = document.getElementById('novo_album_fields');
+        const albumExistenteSelect = document.getElementById('album_existente');
+
+        // Mostra ou esconde campos dependendo da escolha do usuário
+        function toggleAlbumFields() {
+            const selectedValue = document.querySelector('input[name="tipoAlbum"]:checked').value;
+            if (selectedValue === 'novo') {
+                novoAlbumFields.style.display = 'block';
+                albumExistenteSelect.style.display = 'none';
+            } else {
+                novoAlbumFields.style.display = 'none';
+                albumExistenteSelect.style.display = 'block';
+            }
+        }
+
+        // Quando mudar a opção, atualiza a interface
+        radioButtons.forEach(radio => radio.addEventListener('change', toggleAlbumFields));
+        toggleAlbumFields(); // Executa na inicialização também
+    });
+</script>

@@ -1,0 +1,140 @@
+/* O container que segura tudo na página de upload */
+.upload-container-wrapper {
+  padding: 40px;
+  background-color: var(--background-color);
+}
+
+/* A caixa principal branca onde fica o formulário */
+.upload-box {
+  max-width: 700px;
+  margin: 0 auto;
+  background-color: var(--surface-color);
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
+/* O título da página */
+.upload-box h1 {
+  margin-top: 0;
+  margin-bottom: 30px;
+  font-size: 1.8rem;
+  color: var(--primary-text-color);
+  text-align: center;
+  font-weight: 600;
+}
+
+/* A área de arrastar e soltar a imagem */
+.drop-zone {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-height: 200px;
+  border: 2px dashed var(--border-color); /* Borda pontilhada */
+  border-radius: 10px;
+  margin-bottom: 30px;
+  background-color: #f8faff;
+  color: var(--accent-color);
+  transition: background-color 0.3s, border-color 0.3s;
+  cursor: pointer;
+  text-align: center;
+}
+
+/* Muda a cor quando você arrasta um arquivo pra cima dela */
+.drop-zone.drag-over {
+  background-color: #e9f3ff;
+  border-color: var(--accent-color);
+}
+
+/* O texto que fica dentro da área de upload */
+.drop-zone__text {
+  font-weight: 500;
+  font-size: 1.1rem;
+  padding: 0 20px;
+}
+
+/* O input de arquivo de verdade, que a gente esconde */
+.drop-zone__input {
+  display: none;
+}
+
+/* A "gaveta" que agrupa um label e seu campo */
+.form-group {
+  margin-bottom: 25px;
+  text-align: left;
+}
+
+/* O texto em cima de cada campo (ex: 'Descrição') */
+.form-group label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: var(--primary-text-color);
+}
+
+/* O estilo padrão pra todos os campos do formulário */
+.form-control {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: 'Poppins', sans-serif;
+  box-sizing: border-box;
+  background-color: var(--background-color);
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+/* Efeito de brilho azul quando clica em um campo */
+.form-control:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
+  background-color: var(--surface-color);
+}
+
+/* Aquela linha que separa as partes do formulário */
+.separator {
+  border: none;
+  height: 1px;
+  background-color: var(--border-color);
+  margin: 35px 0;
+}
+
+/* A caixinha dos botões de 'opção' (radio) */
+.radio-group {
+  display: flex;
+  gap: 25px;
+  margin-bottom: 15px;
+}
+
+/* O texto do lado de cada bolinha de opção */
+.radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* O botão verde de 'Enviar Imagem' */
+.submit-btn {
+  width: 100%;
+  padding: 15px;
+  border-radius: 8px;
+  border: none;
+  background-color: #28a745;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+/* Escurece um pouco o botão quando passa o mouse */
+.submit-btn:hover {
+  background-color: #218838;
+  transform: translateY(-2px);
+}

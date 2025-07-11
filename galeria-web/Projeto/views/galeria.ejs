@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Galeria</title> <!-- Título que aparece na aba do navegador -->
+
+  <!-- Link pro CSS principal da aplicação -->
+  <link rel='stylesheet' href='/stylesheets/style.css' />
+
+  <!-- Estilo específico pra essa página -->
+  <style>
+    /* Container da galeria, flexível e com espaçamento entre os itens */
+    .galeria-container {
+      display: flex;
+      flex-wrap: wrap;  /* Faz os itens quebrarem linha se não couberem */
+      gap: 10px;        /* Espaço entre os itens */
+    }
+
+    /* Cada item da galeria com borda e um pouco de espaçamento interno */
+    .galeria-item {
+      border: 1px solid #ccc;
+      padding: 10px;
+    }
+
+    /* Imagem dentro do item, tamanho máximo fixo e altura automática */
+    .galeria-item img {
+      max-width: 200px;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>Minha Galeria</h1> <!-- Título visível na página -->
+
+  <!-- Link para enviar uma nova imagem -->
+  <a href="/galeria/upload">Fazer Upload de Nova Imagem</a>
+
+  <!-- Container que vai receber todos os itens de imagem -->
+  <div class="galeria-container">
+    <% imagens.forEach(function(imagem) { %> <!-- Loop para cada imagem do array 'imagens' -->
+      <div class="galeria-item">
+        <!-- Mostra a imagem usando a URL e descrição para o alt -->
+        <img src="<%= imagem.Url %>" alt="<%= imagem.Descricao %>">
+
+        <!-- Mostra a descrição da imagem embaixo -->
+        <p><%= imagem.Descricao %></p>
+      </div>
+    <% }); %>
+  </div>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/stylesheets/style.css">
+    <link rel="stylesheet" href="/stylesheets/dashboard.css">
+    <link rel="stylesheet" href="/stylesheets/albun-detail.css">
+</head>
+<body>
+    <%- include('partials/header', { user: user, tags: tags, categorias: categorias }) %>
+
+    <main class="album-main-content">
+        <div class="section-header">
+            <h2>Resultados da Busca</h2>
+        </div>
+
+        <div class="album-description">
+            <p>
+                <% let filters = []; %>
+                <% if (search_tag) { filters.push(`Tag: <strong>${search_tag}</strong>`); } %>
+                <% if (search_category) { filters.push(`Categoria: <strong>${search_category}</strong>`); } %>
+                <% if (startDate && endDate) { 
+                    // CORREÇÃO: Força o tratamento da data no fuso local para evitar o bug de "um dia antes"
+                    const displayStartDate = new Date(startDate.replace(/-/g, '/')).toLocaleDateString('pt-BR');
+                    const displayEndDate = new Date(endDate.replace(/-/g, '/')).toLocaleDateString('pt-BR');
+                    filters.push(`Período de <strong>${displayStartDate}</strong> a <strong>${displayEndDate}</strong>`); 
+                } %>
+                
+                Exibindo resultados para: <%- filters.join(', ') %>.
+            </p>
+        </div>
+        
+        <% if (imagens.length > 0) { %>
+            <div class="images-grid">
+                <% imagens.forEach(function(imagem) { %>
+                    <div class="image-card">
+                        <img src="<%= imagem.Url %>" alt="<%= imagem.Descricao %>">
+                        <div class="overlay">
+                            <p class="overlay-text"><%= imagem.Descricao %></p>
+                            <small>Enviado em: <%= new Date(imagem.DataUpload).toLocaleDateString() %></small>
+                        </div>
+                    </div>
+                <% }); %>
+            </div>
+        <% } else { %>
+            <div class="empty-state">
+                <p>Nenhuma imagem encontrada com os filtros aplicados.</p>
+                <a href="/" class="btn btn-primary">Limpar Filtros e Voltar</a>
+            </div>
+        <% } %>
+    </main>
+
+    <%- include('partials/footer') %>
+</body>
+</html>

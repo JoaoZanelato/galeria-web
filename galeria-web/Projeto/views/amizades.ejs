@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <!-- Inclui o header padrão com título, usuário, e CSS da dashboard -->
+    <%- include('partials/header', {
+        title: title,
+        user: user,
+        tags: [],
+        categorias: [],
+        page_css: 'dashboard' // CSS específico pra essa página de amigos
+    }) %>
+
+    <style>
+        /* Estilo geral das seções de amigos, pedidos e busca */
+        .friends-section {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        /* Listas de amigos, solicitações e resultados sem marcadores */
+        .friends-list, .requests-list, .search-results-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 15px;
+        }
+        /* Itens das listas alinhados lado a lado e com separação */
+        .friends-list li, .requests-list li, .search-results-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        /* Remove borda do último item da lista */
+        .friends-list li:last-child, .requests-list li:last-child, .search-results-list li:last-child {
+            border-bottom: none;
+        }
+        /* Espaçamento entre botões dentro das listas */
+        .friends-list .btn, .requests-list .btn {
+            margin-left: 10px;
+        }
+        /* Formulário de busca alinhado com espaço entre campos */
+        .search-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        /* Campo de texto para busca com preenchimento e borda */
+        .search-form input[type="text"] {
+            flex-grow: 1; /* ocupa todo espaço disponível */
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        /* Botão da busca com cor primária e efeito hover */
+        .search-form button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .search-form button:hover {
+            background-color: #0056b3;
+        }
+        /* Mensagens de status com cores para sucesso e erro */
+        .status-message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .status-message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+        .status-message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <main class="dashboard-main container">
+        <h1>Gerenciar Amigos</h1>
+
+        <!-- Exibe mensagem de sucesso ou erro, se houver -->
+        <% if (typeof success !== 'undefined' && success) { %>
+            <p class="status-message success"><%= success %></p>
+        <% } %>
+        <% if (typeof error !== 'undefined' && error) { %>
+            <p class="status-message error"><%= error %></p>
+        <% } %>
+
+        <!-- Seção para buscar novos amigos -->
+        <section class="friends-section">
+            <h2>Buscar Novos Amigos</h2>
+            <form action="/amizades/buscar" method="POST" class="search-form">
+                <!-- Campo de busca preenchido com termo anterior, se existir -->
+                <input type="text" name="termoBusca" placeholder="Buscar por nome de usuário..." value="<%= typeof termoBusca !== 'undefined' ? termoBusca : '' %>">
+                <button type="submit">Buscar</button>
+            </form>
+
+            <!-- Se encontrou resultados, lista os usuários -->
+            <% if (searchResult && searchResult.length > 0) { %>
+                <h3>Resultados da Busca:</h3>
+                <ul class="search-results-list">
+                    <% searchResult.forEach(u => { %>
+                        <li>
+                            <%= u.NomeUsuario %>
+                            <!-- Botão para enviar solicitação de amizade -->
+                            <button class="btn btn-primary btn-sm" onclick="sendFriendRequest('<%= u.UsuarioID %>')">Adicionar Amigo</button>
+                        </li>
+                    <% }) %>
+                </ul>
+            <% } else if (searchResult && searchResult.length === 0 && typeof termoBusca !== 'undefined' && termoBusca.length > 0) { %>
+                <!-- Mensagem quando não encontra ninguém com o termo -->
+                <p>Nenhum usuário encontrado com o termo "<%= termoBusca %>".</p>
+            <% } %>
+        </section>
+
+        <!-- Seção para mostrar solicitações recebidas -->
+        <section class="friends-section">
+            <h2>Solicitações de Amizade Recebidas</h2>
+            <% if (solicitacoesRecebidas.length > 0) { %>
+                <ul class="requests-list">
+                    <% solicitacoesRecebidas.forEach(solicitacao => { %>
+                        <li>
+                            <%= solicitacao.NomeUsuario %>
+                            <div>
+                                <!-- Botões para aceitar ou recusar pedido -->
+                                <button class="btn btn-success btn-sm" onclick="respondFriendRequest('<%= solicitacao.AmizadeID %>', 'aceitar')">Aceitar</button>
+                                <button class="btn btn-danger btn-sm" onclick="respondFriendRequest('<%= solicitacao.AmizadeID %>', 'recusar')">Recusar</button>
+                            </div>
+                        </li>
+                    <% }) %>
+                </ul>
+            <% } else { %>
+                <p>Nenhuma solicitação de amizade pendente.</p>
+            <% } %>
+        </section>
+
+        <!-- Seção para listar amigos atuais -->
+        <section class="friends-section">
+            <h2>Meus Amigos</h2>
+            <% if (meusAmigos.length > 0) { %>
+                <ul class="friends-list">
+                    <% meusAmigos.forEach(amigo => { %>
+                        <li>
+                            <%= amigo.NomeUsuario %>
+                            <!-- Botão para remover amigo -->
+                            <button class="btn btn-danger btn-sm" onclick="removeFriend('<%= amigo.AmizadeID %>')">Remover Amigo</button>
+                        </li>
+                    <% }) %>
+                </ul>
+            <% } else { %>
+                <p>Você ainda não tem amigos. Que tal buscar e adicionar alguém?</p>
+            <% } %>
+        </section>
+    </main>
+
+    <script>
+        // Função genérica para fazer requisição POST e retornar JSON
+        async function sendPostRequest(url, body = {}) {
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                });
+                return await response.json();
+            } catch (error) {
+                console.error('Erro na requisição:', error);
+                return { success: false, message: 'Erro de comunicação com o servidor.' };
+            }
+        }
+
+        // Envia solicitação de amizade para o usuário indicado
+        async function sendFriendRequest(destinatarioId) {
+            const idAsNumber = parseInt(destinatarioId); // garante que o ID é número
+            const result = await sendPostRequest(`/amizades/solicitar/${idAsNumber}`);
+            if (result.success) {
+                alert(result.message);
+                window.location.reload(); // atualiza a página pra mostrar mudanças
+            } else {
+                alert('Erro: ' + result.message);
+            }
+        }
+
+        // Aceita ou recusa uma solicitação recebida
+        async function respondFriendRequest(amizadeId, acao) {
+            const idAsNumber = parseInt(amizadeId);
+            const result = await sendPostRequest(`/amizades/responder/${idAsNumber}`, { acao: acao });
+            if (result.success) {
+                alert(result.message);
+                window.location.reload();
+            } else {
+                alert('Erro: ' + result.message);
+            }
+        }
+
+        // Remove um amigo após confirmação do usuário
+        async function removeFriend(amizadeId) {
+            if (confirm('Tem certeza que deseja remover esta amizade?')) {
+                const idAsNumber = parseInt(amizadeId);
+                const result = await sendPostRequest(`/amizades/remover/${idAsNumber}`);
+                if (result.success) {
+                    alert(result.message);
+                    window.location.reload();
+                } else {
+                    alert('Erro: ' + result.message);
+                }
+            }
+        }
+    </script>
+
+    <!-- Inclui o footer padrão -->
+    <%- include('partials/footer') %>
+</body>
+</html>

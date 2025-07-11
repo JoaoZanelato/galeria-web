@@ -1,0 +1,123 @@
+<%- include('partials/header', {
+    title: album.Nome,       // Título da página com o nome do álbum
+    user: user,              // Usuário logado (para controle de permissões e exibição)
+    tags: tags,              // Tags usadas no header, se houver
+    categorias: categorias,  // Categorias para o header
+    page_css: 'albun-detail' // CSS específico para essa página de álbum
+}) %>
+
+<main class="album-main-content container">
+    <div class="section-header">
+        <h2><%= album.Nome %></h2> <!-- Nome do álbum exibido no topo -->
+
+        <% if (isAlbumOwner) { %>  <!-- Se usuário for dono do álbum, mostra ações extras -->
+            <div class="album-owner-actions">
+                <!-- Botão para deletar o álbum, com confirmação -->
+                <form action="/albuns/<%= album.AlbumID %>/delete" method="POST" 
+                    onsubmit="return confirm('Tem certeza que deseja apagar este álbum? Esta ação não pode ser desfeita.');" 
+                    style="display: inline-block;">
+                    <button type="submit" class="btn btn-danger">Deletar Álbum</button>
+                </form>
+
+                <!-- Link para página de compartilhamento do álbum -->
+                <a href="/albuns/<%= album.AlbumID %>/compartilhar" class="btn btn-primary" style="margin-left: 10px;">
+                    Compartilhar Álbum
+                </a>
+            </div>
+        <% } %>
+    </div>
+
+    <div class="album-description">
+        <!-- Descrição do álbum, ou texto padrão se estiver vazio -->
+        <p><%= album.Descricao || 'Este álbum não tem uma descrição.' %></p>
+    </div>
+
+    <% if (imagens.length > 0) { %>  <!-- Verifica se o álbum tem imagens -->
+        <div class="images-grid">
+            <% imagens.forEach(imagem => { %>  <!-- Para cada imagem dentro do álbum -->
+                <div class="image-card">
+                    <!-- Exibe a imagem com descrição no alt e abre modal ao clicar -->
+                    <img src="<%= imagem.Url %>" alt="<%= imagem.Descricao %>" 
+                        onclick="openImageModal('<%= imagem.Url %>', '<%= imagem.Descricao %>')">
+
+                    <div class="overlay">
+                        <!-- Sobreposição que aparece ao passar o mouse, mostrando descrição -->
+                        <p class="overlay-text"><%= imagem.Descricao %></p>
+
+                        <div class="image-actions">
+                            <%
+                                // Usuário pode editar se for dono do álbum ou tiver permissão "editar"
+                                const canEditImages = isAlbumOwner || (permissaoDoUsuario === 'editar');
+                            %>
+                            <% if (canEditImages) { %>
+                                <!-- Link para editar a imagem, com onclick para evitar abrir modal -->
+                                <a href="/galeria/imagem/<%= imagem.ImagemID %>/edit" class="edit-image-btn" onclick="event.stopPropagation()">Editar</a>
+
+                                <!-- Formulário para deletar a imagem, com confirmação e stopPropagation -->
+                                <form class="delete-image-form" action="/galeria/imagem/<%= imagem.ImagemID %>/delete" method="POST" 
+                                    onsubmit="event.stopPropagation(); return confirm('Tem certeza que deseja apagar esta imagem?');" 
+                                    style="display: inline-block;">
+                                    <!-- Envia o id do álbum para o backend se precisar -->
+                                    <input type="hidden" name="albumId" value="<%= album.AlbumID %>">
+                                    <button type="submit" class="delete-image-btn" onclick="event.stopPropagation()">Deletar</button>
+                                </form>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+            <% }) %>
+        </div>
+    <% } else { %>
+        <!-- Caso não tenha nenhuma imagem no álbum -->
+        <div class="empty-state">
+            <p>Este álbum ainda não tem nenhuma imagem.</p>
+
+            <%
+                // Usuário pode adicionar imagem se for dono ou tiver permissão editar
+                const canAddImages = isAlbumOwner || (permissaoDoUsuario === 'editar');
+            %>
+            <% if (canAddImages) { %>
+                <!-- Botão para ir para upload e adicionar imagem -->
+                <a href="/galeria/upload" class="btn btn-primary">Adicionar Imagem</a>
+            <% } %>
+        </div>
+    <% } %>
+</main>
+
+<!-- Modal para visualização maior da imagem ao clicar -->
+<div id="imageModal" class="modal">
+    <!-- Botão para fechar o modal -->
+    <span class="modal-close" onclick="closeImageModal()">&times;</span>
+    <!-- Imagem em tamanho maior -->
+    <img class="modal-content" id="modalImage">
+    <!-- Legenda da imagem -->
+    <div id="modalCaption"></div>
+</div>
+
+<script>
+    // Abre o modal e coloca a imagem e descrição
+    function openImageModal(imageUrl, imageDescription) {
+        const modal = document.getElementById('imageModal');
+        const modalImage = document.getElementById('modalImage');
+        const modalCaption = document.getElementById('modalCaption');
+
+        modal.style.display = 'block';         // mostra o modal
+        modalImage.src = imageUrl;              // troca a imagem
+        modalCaption.innerHTML = imageDescription; // coloca legenda
+    }
+
+    // Fecha o modal
+    function closeImageModal() {
+        document.getElementById('imageModal').style.display = 'none';
+    }
+
+    // Fecha modal se clicar fora da imagem (na área escura)
+    window.onclick = function(event) {
+        const modal = document.getElementById('imageModal');
+        if (event.target == modal) {
+            modal.style.display = 'none';
+        }
+    }
+</script>
+
+<%- include('partials/footer') %>  <!-- Inclui rodapé padrão -->

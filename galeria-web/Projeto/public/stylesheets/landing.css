@@ -1,0 +1,56 @@
+/* O container principal que ocupa a tela toda e bota a imagem de fundo */
+body{
+  overflow: hidden;
+}
+.landing-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #212529; /* Cor de fundo escura caso a imagem não carregue */
+  /* Imagem de fundo com um filtro escuro por cima */
+  background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.pexels.com/photos/3225517/pexels-photo-3225517.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2');
+  background-size: cover;
+  background-position: center;
+  color: white; /* Cor do texto padrão fica branca */
+  text-align: center;
+}
+
+/* A caixa de conteúdo que fica no meio da tela */
+.landing-box {
+  max-width: 700px;
+  padding: 50px;
+}
+
+/* Um espacinho embaixo da logo */
+.landing-box .logo-container {
+    margin-bottom: 30px;
+}
+
+/* Define a altura da imagem da logo na landing page */
+.landing-box .logo-container img {
+    height: 200px; 
+}
+
+/* O título principal, grandão */
+.landing-box h1 {
+  font-size: 3.5rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+  text-shadow: 2px 2px 10px rgba(0,0,0,0.5); /* Sombra no texto pra dar destaque */
+}
+
+/* O parágrafo de texto explicativo */
+.landing-box p {
+  font-size: 1.3rem;
+  margin-bottom: 40px;
+  font-weight: 300;
+  text-shadow: 1px 1px 5px rgba(0,0,0,0.5);
+}
+
+/* Ajeita os links/botões de ação */
+.landing-actions a {
+  margin: 0 15px;
+  padding: 12px 30px;
+  font-size: 1.1rem;
+}
