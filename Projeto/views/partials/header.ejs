@@ -1,37 +1,32 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= typeof title !== 'undefined' ? title : 'Galeria Web' %></title>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-    <link rel='stylesheet' href='/stylesheets/style.css' />
-    <link rel='stylesheet' href='/stylesheets/dashboard.css' />
-
-    <% if (typeof page_css !== 'undefined' && page_css) { %>
-        <link rel='stylesheet' href='/stylesheets/<%= page_css %>.css' />
-    <% } %>
-</head>
-<body>
-
-<% if (typeof user !== 'undefined' && user) { %>
 <header class="dashboard-header">
     <div class="logo-container">
-        <a href="/"><img src="/images/logopreto.jpg" alt="Logo Rancho dos Sonhos"></a>
+        <a href="/">
+            <img src="/images/logo.png" alt="Logo Galeria Web">
+        </a>
+    </div>
+
+    <div class="search-container">
+        <form action="/search" method="GET" class="search-form">
+            <input type="search" name="q" placeholder="Buscar por tags, descrições..." class="search-input">
+            <button type="submit" class="search-button">Buscar</button>
+        </form>
     </div>
 
     <div class="header-user-items">
-        <div class="user-actions">
-            <a href="/galeria/upload" class="btn btn-primary">Upload</a>
-            <a href="/amizades" class="btn btn-secondary">Amigos</a>
-            <a href="/settings" class="btn btn-secondary">Configurações</a>
-            <a href="/auth/logout" class="btn btn-danger">Sair</a>
-        </div>
-        <span class="user-greeting">Olá, <%= user.nome %></span>
+        <% if (user) { %>
+            <span class="user-greeting">Olá, <%= user.nome %></span>
+            <div class="user-actions">
+                <a href="/amizades" class="btn btn-secondary">Amigos</a>
+                
+                <a href="/compartilhados" class="btn btn-primary">Compartilhados</a>
+                
+                <a href="/auth/logout" class="btn btn-danger">Logout</a>
+            </div>
+        <% } else { %>
+            <div class="user-actions">
+                <a href="/auth/login" class="btn btn-secondary">Entrar</a>
+                <a href="/auth/cadastro" class="btn btn-primary">Cadastre-se</a>
+            </div>
+        <% } %>
     </div>
 </header>
-<% } %>

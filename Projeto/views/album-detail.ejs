@@ -29,9 +29,7 @@
             <% if (isAlbumOwner) { %>
                 <div class="image-actions" style="gap: 15px;">
                     <a href="/albuns/<%= album.AlbumID %>/edit" class="btn btn-secondary">Editar Álbum</a>
-                    
                     <a href="/albuns/<%= album.AlbumID %>/compartilhar" class="btn btn-primary">Compartilhar</a>
-
                     <form action="/albuns/<%= album.AlbumID %>/delete" method="POST" onsubmit="return confirm('Tem certeza que deseja apagar este álbum? Todas as imagens que pertencem somente a ele serão perdidas permanentemente.');">
                         <button type="submit" class="btn btn-danger" style="min-width: 135px;">Apagar Álbum</button>
                     </form>
@@ -47,15 +45,19 @@
                         <div class="overlay">
                             <p class="overlay-text"><%= imagem.Descricao || 'Sem descrição' %></p>
                             
-                            <% if (isAlbumOwner || permissaoDoUsuario === 'editar') { %>
-                                <div class="image-actions">
+                            <div class="image-actions">
+                                <% if (imagem.UsuarioID === user.id) { %>
+                                    <a href="/galeria/imagem/<%= imagem.ImagemID %>/share" class="edit-image-btn" style="background-color: #0069d9;">Compartilhar</a>
+                                <% } %>
+
+                                <% if (isAlbumOwner || permissaoDoUsuario === 'editar') { %>
                                     <a href="/galeria/imagem/<%= imagem.ImagemID %>/edit" class="edit-image-btn">Editar</a>
                                     <form class="delete-image-form" action="/galeria/imagem/<%= imagem.ImagemID %>/delete" method="POST" onsubmit="return confirm('Deseja realmente apagar esta imagem?');">
                                         <input type="hidden" name="albumId" value="<%= album.AlbumID %>">
                                         <button type="submit" class="delete-image-btn">Apagar</button>
                                     </form>
-                                </div>
-                            <% } %>
+                                <% } %>
+                            </div>
                         </div>
                     </div>
                 <% }); %>
@@ -76,11 +78,9 @@
 
     <script src="/js/main.js"></script>
     <script>
-        // Adaptação do script main.js para evitar conflito com os botões de ação
         document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('.image-card').forEach(card => {
                 card.addEventListener('click', function(e) {
-                    // Impede que o modal abra se o clique foi em um botão de ação dentro do card
                     if (e.target.matches('.edit-image-btn') || e.target.matches('.delete-image-btn') || e.target.closest('form')) {
                         return;
                     }

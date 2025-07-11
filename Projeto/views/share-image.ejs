@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compartilhar Imagem - Galeria Web</title>
+    <link rel="stylesheet" href="/stylesheets/style.css">
+    <link rel="stylesheet" href="/stylesheets/upload.css"> <style>
+        .share-preview-img {
+            max-width: 150px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+        .friend-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/header') %>
+
+    <div class="upload-container-wrapper">
+        <div class="upload-box">
+            <h1>Compartilhar Imagem</h1>
+            <img src="<%= imagem.Url %>" alt="<%= imagem.Descricao %>" class="share-preview-img">
+            <p>"<%= imagem.Descricao || 'Sem descrição' %>"</p>
+            
+            <hr class="separator">
+
+            <form action="/galeria/imagem/<%= imagem.ImagemID %>/share" method="POST">
+                
+                <% if (amigos.length > 0) { %>
+                    <div class="form-group">
+                        <label>Compartilhar com amigos:</label>
+                        <% amigos.forEach(amigo => { %>
+                            <% const sharedInfo = compartilhamentos.find(c => c.UsuarioDestinatarioID == amigo.UsuarioID); %>
+                            <div class="friend-list-item">
+                                <span><%= amigo.NomeUsuario %></span>
+                                <div>
+                                    <input type="hidden" name="compartilhamentos[][friendId]" value="<%= amigo.UsuarioID %>">
+                                    <select name="compartilhamentos[][permissao]" class="form-control" style="width: auto; display: inline-block;">
+                                        <option value="">Não compartilhar</option>
+                                        <option value="visualizar" <%= sharedInfo && sharedInfo.Permissao === 'visualizar' ? 'selected' : '' %>>Visualizar</option>
+                                        <option value="baixar" <%= sharedInfo && sharedInfo.Permissao === 'baixar' ? 'selected' : '' %>>Baixar</option>
+                                        <option value="editar" <%= sharedInfo && sharedInfo.Permissao === 'editar' ? 'selected' : '' %>>Editar</option>
+                                    </select>
+                                </div>
+                            </div>
+                        <% }) %>
+                    </div>
+                    <button type="submit" class="submit-btn">Salvar Compartilhamentos</button>
+                <% } else { %>
+                    <p>Você não tem amigos para compartilhar esta imagem.</p>
+                <% } %>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

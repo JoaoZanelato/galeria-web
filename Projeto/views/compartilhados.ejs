@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compartilhados Comigo - Galeria Web</title>
+    <link rel="stylesheet" href="/stylesheets/style.css">
+    <link rel="stylesheet" href="/stylesheets/dashboard.css"> <link rel="stylesheet" href="/stylesheets/albun-detail.css"> </head>
+<body>
+    <%- include('partials/header') %>
+
+    <main class="dashboard-main">
+        <h2>Compartilhados Comigo</h2>
+
+        <section>
+            <h3 style="margin-bottom: 20px; font-weight: 500;">Álbuns</h3>
+            <% if (albuns.length > 0) { %>
+                <div class="albuns-grid">
+                    <% albuns.forEach(album => { %>
+                        <a href="/albuns/<%= album.AlbumID %>" class="album-card">
+                            <div class="album-icon">
+                                <i class="fas fa-folder"></i> </div>
+                            <div class="album-info">
+                                <h3><%= album.Nome %></h3>
+                                <p>Compartilhado por: <strong><%= album.DonoDoItem %></strong></p>
+                            </div>
+                        </a>
+                    <% }); %>
+                </div>
+            <% } else { %>
+                <p>Nenhum álbum foi compartilhado com você ainda.</p>
+            <% } %>
+        </section>
+
+        <hr style="margin: 40px 0;">
+
+        <section>
+            <h3 style="margin-bottom: 20px; font-weight: 500;">Imagens Individuais</h3>
+            <% if (imagens.length > 0) { %>
+                <div class="images-grid">
+                    <% imagens.forEach(imagem => { %>
+                        <div class="image-card" data-img-src="<%= imagem.Url %>" data-img-caption="<%= imagem.Descricao %>">
+                             <img src="<%= imagem.Url %>" alt="<%= imagem.Descricao %>">
+                             <div class="overlay">
+                                <p class="overlay-text"><%= imagem.Descricao %></p>
+                                <p class="overlay-text" style="font-size: 0.8em; opacity: 0.8;">Por: <%= imagem.DonoDoItem %></p>
+                             </div>
+                        </div>
+                    <% }); %>
+                </div>
+            <% } else { %>
+                <p>Nenhuma imagem individual foi compartilhada com você ainda.</p>
+            <% } %>
+        </section>
+    </main>
+
+    <div id="imageModal" class="modal">
+        <span class="modal-close">&times;</span>
+        <img class="modal-content" id="modalImage">
+        <div id="modalCaption"></div>
+    </div>
+
+    <script src="/js/main.js"></script>
+</body>
+</html>
