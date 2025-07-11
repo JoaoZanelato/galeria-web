@@ -1,42 +1,66 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastro - Galeria</title>
+    <meta charset="UTF-8"> <!-- Define o conjunto de caracteres para suporte a acentuação -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Responsividade para dispositivos móveis -->
+    <title>Cadastro</title> <!-- Título da aba do navegador -->
+    
+    <!-- Link para o CSS principal do site -->
+    <link rel="stylesheet" href="/stylesheets/style.css">
+    <!-- Link para o CSS específico da página de cadastro -->
     <link rel="stylesheet" href="/stylesheets/cadastro.css">
 </head>
 <body>
+    <!-- Container principal do formulário de autenticação -->
+    <div class="auth-container">
+        <div class="auth-box">
+            <!-- Logo com link para a página inicial -->
+            <div class="logo-container">
+                <a href="/"><img src="/images/logopreto.jpg" alt="Logo do Estúdio"></a>
+            </div>
 
-    <div class="background-container">
-        <div class="login-box">
-            <h1>Criar Conta</h1>
-            
-            <form action="/cadastro-Login/cadastro" method="POST">
-                
+            <h1>Criar Conta</h1> <!-- Título do formulário -->
+
+            <!-- Exibe mensagem de erro, se existir -->
+            <% if (typeof error !== 'undefined' && error) { %>
+                <p class="auth-error"><%= error %></p>
+            <% } %>
+
+            <!-- Formulário para cadastro, envia via POST -->
+            <form action="/auth/cadastro" method="POST">
+                <!-- Campo para nome de usuário -->
+                <div class="input-group">
+                    <input type="text" name="nomeUsuario" id="nomeUsuario" required>
+                    <label for="nomeUsuario">Nome de Usuário</label>
+                </div>
+
+                <!-- Campo para email -->
                 <div class="input-group">
                     <input type="email" name="email" id="email" required>
                     <label for="email">Email</label>
                 </div>
 
+                <!-- Campo para senha -->
                 <div class="input-group">
                     <input type="password" name="senha" id="senha" required>
                     <label for="senha">Senha</label>
                 </div>
-                
+
+                <!-- Campo para confirmação de senha -->
                 <div class="input-group">
                     <input type="password" name="confirmar_senha" id="confirmar_senha" required>
                     <label for="confirmar_senha">Confirmar Senha</label>
                 </div>
 
-                <button type="submit">Cadastrar</button>
-
-                <div class="signup-link">
-                    Já tem uma conta? <a href="/cadastro-Login/login">Faça Login</a>
-                </div>
+                <!-- Botão para enviar o formulário -->
+                <button type="submit" class="auth-button">Cadastrar</button>
             </form>
+
+            <!-- Link para a página de login -->
+            <div class="auth-link">
+                <p>Já tem uma conta? <a href="/auth/login">Faça Login</a></p>
+            </div>
         </div>
     </div>
-
 </body>
 </html>

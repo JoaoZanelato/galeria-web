@@ -1,122 +1,117 @@
-/* Configuração geral da página */
+/* Zera as margens e define a fonte pra página toda, com um fundo cinza claro */
 body, html {
     margin: 0;
     padding: 0;
     height: 100%;
-    font-family: Arial, sans-serif;
+    font-family: 'Poppins', sans-serif;
+    background-color: #e9ecef;
 }
 
-/* O container principal que segura a imagem de fundo */
-
-
-.background-container {
-    /* Link para a sua NOVA imagem de cadastro */
-    background-image: url('https://images.pexels.com/photos/2570059/pexels-photo-2570059.jpeg?_gl=1*1h7m3rk*_ga*MTY5NDc0NDU4LjE3NTE2MzU2MjA.*_ga_8JE65Q40S6*czE3NTE2MzU2MjAkbzEkZzEkdDE3NTE2MzYyNDEkajM4JGwwJGgw'); 
-    
-    /* O resto dos estilos de fundo continuam os mesmos */
-    background-size: cover;
-    
-    background-position: center;
-    height: 100vh; 
-    width: 100vw;
+/* Um contêiner que centraliza a caixa de login no meio da tela */
+.auth-container {
+    height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
+    padding: 20px;
 }
 
-/* A caixa de login com o efeito de vidro fosco */
-.login-box {
-    width: 380px;
+/* A caixa branca principal do formulário */
+.auth-box {
+    width: 100%;
+    max-width: 420px;
     padding: 40px;
-    
-    /* Cor de fundo semi-transparente, essencial para o efeito */
-    background: rgba(255, 255, 255, 0.15);
-    
-    /* O efeito que embaça o que está atrás da caixa */
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px); /* Para compatibilidade com Safari */
-
-    /* Outros estilos para deixar bonito */
-    border-radius: 15px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-    color: white; /* Cor do texto dentro da caixa */
-}
-
-.login-box h1 {
-    margin: 0 0 30px;
-    padding: 0;
+    background: #ffffff;
+    border-radius: 12px; /* Cantos arredondados */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); /* Sombra suave */
     text-align: center;
-    font-size: 28px;
 }
 
-/* Grupo de input (label + campo) */
-.input-group {
-    position: relative;
+/* Espacinho embaixo da logo */
+.auth-box .logo-container {
     margin-bottom: 30px;
 }
 
+/* Define a altura da imagem da logo */
+.auth-box .logo-container img {
+    height: 60px;
+}
+
+/* Estilo do título principal (ex: "Entrar") */
+.auth-box h1 {
+    margin: 0 0 30px;
+    padding: 0;
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: #333;
+}
+
+/* A "gaveta" de cada campo de texto (input) */
+.input-group {
+    position: relative;
+    margin-bottom: 25px;
+    text-align: left;
+}
+
+/* A aparência dos campos de Email e Senha */
 .input-group input {
     width: 100%;
-    padding: 10px 0;
-    font-size: 16px;
+    padding: 14px 10px;
+    font-size: 1rem;
+    color: #333;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background: #f8f9fa;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+/* Efeito de brilho azul quando você clica no campo */
+.input-group input:focus {
+    border-color: var(--accent-color);
+    background-color: #fff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
+}
+
+/* O botão principal do formulário */
+.auth-button {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent-color);
     color: white;
     border: none;
-    border-bottom: 2px solid #fff;
-    outline: none;
-    background: transparent;
-}
-
-.input-group label {
-    position: absolute;
-    top: 0;
-    left: 0;
-    padding: 10px 0;
-    font-size: 16px;
-    color: #fff;
-    pointer-events: none;
-    transition: .5s;
-}
-
-/* Animação para o label subir quando o campo é focado/preenchido */
-.input-group input:focus ~ label,
-.input-group input:valid ~ label {
-    top: -20px;
-    left: 0;
-    color: #ffffff;
-    font-size: 12px;
-}
-
-/* Estilo do botão */
-form button {
-    width: 100%;
-    padding: 12px;
-    background: rgba(255, 255, 255, 0.3);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    border-radius: 5px;
+    border-radius: 8px;
     cursor: pointer;
-    font-size: 18px;
+    font-size: 1.1rem;
+    font-weight: 500;
     transition: background-color 0.3s;
 }
 
-form button:hover {
-    background: rgba(255, 255, 255, 0.5);
+/* Escurece um pouco o botão quando passa o mouse */
+.auth-button:hover {
+    background: var(--accent-color-hover);
 }
 
-/* Link para cadastro */
-.signup-link {
-    margin-top: 20px;
-    text-align: center;
-    font-size: 14px;
+/* O texto que fica embaixo do botão (ex: "Não tem uma conta?") */
+.auth-link {
+    margin-top: 25px;
+    font-size: 0.9rem;
+    color: #555;
 }
 
-.signup-link a {
-    color: #ffffff;
-    text-decoration: none;
-    font-weight: bold;
+/* O link clicável nesse texto (ex: "Cadastre-se") */
+.auth-link a {
+    color: var(--accent-color);
+    font-weight: 500;
 }
 
-.signup-link a:hover {
-    text-decoration: underline;
+/* A caixa vermelha que aparece para mostrar erros */
+.auth-error {
+    color: #dc3545;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 0.9rem;
 }

@@ -2,55 +2,43 @@
 const mysql = require('mysql2/promise');
 const fs = require('fs');
 const path = require('path');
+
+// Carrega as variáveis de ambiente do arquivo .env na raiz do projeto
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
+// --- Configuração da Conexão com o Banco de Dados Aiven ---
+// Os valores são lidos diretamente do arquivo .env
 const dbConfig = {
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'galeria_web_db', // Nome do DB que você quer criar/usar
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT,
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
+    queueLimit: 0,
+    // Configuração de SSL/TLS, essencial para conectar com a Aiven.
+    // O certificado é lido diretamente da variável de ambiente DB_CA.
+    ssl: {
+        ca: process.env.DB_CA
+    }
 };
 
-// --- Modificação para criar o DB se não existir (PARA DESENVOLVIMENTO) ---
-async function createDatabaseIfNotExists() {
-    console.log(`Verificando/Criando o banco de dados: ${dbConfig.database}`);
-    let connectionWithoutDb; // Conexão sem especificar o banco de dados
-    try {
-        // Tenta conectar ao servidor MySQL/MariaDB sem um DB específico
-        // Isso requer que o DB_USER tenha permissão para criar bancos de dados
-        connectionWithoutDb = await mysql.createConnection({
-            host: dbConfig.host,
-            user: dbConfig.user,
-            password: dbConfig.password
-        });
-
-        // Comando para criar o banco de dados se ele não existir
-        await connectionWithoutDb.query(`CREATE DATABASE IF NOT EXISTS \`${dbConfig.database}\``);
-        console.log(`Banco de dados '${dbConfig.database}' verificado/criado com sucesso.`);
-
-    } catch (err) {
-        console.error('Erro ao verificar/criar o banco de dados:', err.message);
-        console.error('Verifique se o usuário do DB tem permissão para criar bancos de dados.');
-        process.exit(1); // Aborta se não conseguir criar o DB
-    } finally {
-        if (connectionWithoutDb) connectionWithoutDb.end(); // Fecha a conexão
-    }
-}
-// --- Fim da modificação ---
-
-
-// Cria um pool de conexões (este pool se conectará ao DB especificado em dbConfig.database)
+// Cria um pool de conexões com a configuração acima.
+// O pool gerencia as conexões de forma mais eficiente.
 const pool = mysql.createPool(dbConfig);
 
+/**
+ * Função para configurar o schema do banco de dados (criar tabelas).
+ * Esta função deve ser executada com cautela, geralmente apenas uma vez
+ * durante o setup inicial do ambiente ou para migrações controladas.
+ */
 async function setupDatabaseSchema() {
     console.log('Iniciando configuração do esquema do banco de dados...');
     let connection;
     try {
         connection = await pool.getConnection();
-        console.log('Conexão ao banco de dados estabelecida para setup.');
+        console.log('Conexão estabelecida para setup do schema.');
 
         const schemaSql = fs.readFileSync(path.join(__dirname, 'init.sql'), 'utf8');
         const sqlCommands = schemaSql.split(';').filter(cmd => cmd.trim() !== '');
@@ -63,39 +51,41 @@ async function setupDatabaseSchema() {
 
         console.log('Schema do banco de dados criado/atualizado com sucesso!');
     } catch (err) {
-        console.error('Erro ao configurar o banco de dados:', err.message);
-        console.error('SQL Error Code:', err.code);
-        console.error('Mensagem SQL:', err.sqlMessage);
+        console.error('Erro ao configurar o schema do banco de dados:', err.message);
         process.exit(1);
     } finally {
         if (connection) connection.release();
     }
 }
 
+/**
+ * Inicializa e testa a conexão com o banco de dados.
+ */
 async function initializeDatabase() {
     try {
-        // 1. Tenta criar o banco de dados se não existir
-        await createDatabaseIfNotExists(); // <-- NOVO PASSO AQUI!
-
-        // 2. Agora, testa a conexão ao banco de dados específico e configura o esquema
+        // Testa a conexão pegando uma conexão do pool.
         const connection = await pool.getConnection();
-        console.log(`Conectado ao banco de dados '${dbConfig.database}'!`);
-        connection.release();
+        console.log(`Conectado com sucesso ao banco de dados '${dbConfig.database}' no host '${dbConfig.host}'!`);
+        connection.release(); // Libera a conexão de volta para o pool.
 
-        // --- APENAS PARA DESENVOLVIMENTO INICIAL ---
-        // Descomente esta linha para recriar as tabelas a cada início do app.
-        await setupDatabaseSchema();
+        // A linha abaixo que cria as tabelas não deve ser executada toda vez que
+        // a aplicação inicia em um ambiente de produção.
+        // Descomente apenas para o setup inicial.
+        // await setupDatabaseSchema();
 
     } catch (err) {
-        console.error('--- ERRO FATAL: Falha ao conectar ou configurar o banco de dados ---');
+        console.error('--- ERRO FATAL: Falha ao conectar ao banco de dados na Aiven ---');
         console.error('Mensagem do erro:', err.message);
-        console.error('Verifique:');
-        console.error('  1. Suas credenciais no arquivo .env (DB_HOST, DB_USER, DB_PASSWORD).');
-        console.error('  2. Se o servidor MySQL/MariaDB está rodando.');
-        console.error('  3. Se o usuário do DB tem permissões para se conectar e criar o DB/tabelas.');
+        console.error('\nVerifique os seguintes pontos no seu arquivo .env:');
+        console.error('  1. DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT estão corretos.');
+        console.error('  2. A variável DB_CA está presente e contém o certificado correto, incluindo as linhas BEGIN/END CERTIFICATE.');
+        console.error('  3. Seu IP está liberado no firewall da Aiven (se aplicável).');
         process.exit(1);
     }
 }
 
+// Inicia o processo de conexão ao carregar o módulo.
 initializeDatabase();
+
+// Exporta o pool para ser usado em outras partes da aplicação (ex: nas rotas).
 module.exports = pool;

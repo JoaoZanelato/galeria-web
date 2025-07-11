@@ -1,11 +1,153 @@
 <!DOCTYPE html>
-<html>
-  <head>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title %></title>
-    <link rel='stylesheet' href='/stylesheets/style.css' />
-  </head>
-  <body>
-    <h1><%= title %></h1>
-    <p>Welcome to <%= title %></p>
-  </body>
+    <link rel="stylesheet" href="/stylesheets/style.css">
+    <link rel="stylesheet" href="/stylesheets/dashboard.css">
+    <% if (!user) { %>
+        <link rel="stylesheet" href="/stylesheets/landing.css">
+    <% } %>
+    <style>
+        .search-filter-box {
+            background-color: var(--surface-color);
+            padding: 25px 30px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 40px;
+        }
+        .search-filter-box h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+        .filter-group {
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+        }
+        .filter-group .form-group {
+            flex-grow: 1;
+            margin-bottom: 0;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        .filter-group .btn {
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <% if (user) { %>
+        <%- include('partials/header', { user: user, tags: tags, categorias: categorias }) %>
+
+        <main class="dashboard-main">
+            <div class="search-filter-box">
+                <h2 style="padding-bottom: 15px; border-bottom: 1px solid var(--border-color);">Busca e Filtros</h2>
+                <form action="/search" method="GET">
+                    <div class="filter-group">
+                        <div class="form-group">
+                            <label for="tag_id">Tag</label>
+                            <select name="tag_id" id="tag_id" class="form-control">
+                                <option value="">Todas</option>
+                                <% if (tags && tags.length > 0) { %>
+                                    <% tags.forEach(function(tag) { %>
+                                        <option value="<%= tag.TagID %>"><%= tag.Nome %></option>
+                                    <% }); %>
+                                <% } %>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="category_id">Categoria</label>
+                            <select name="category_id" id="category_id" class="form-control">
+                                <option value="">Todas</option>
+                                <% if (categorias && categorias.length > 0) { %>
+                                    <% categorias.forEach(function(cat) { %>
+                                        <option value="<%= cat.CategoriaID %>"><%= cat.Nome %></option>
+                                    <% }); %>
+                                <% } %>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="startDate">De</label>
+                            <input type="date" class="form-control" id="startDate" name="startDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="endDate">Até</label>
+                            <input type="date" class="form-control" id="endDate" name="endDate">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Filtrar</button>
+                    </div>
+                </form>
+            </div>
+
+            <h2>Meus Álbuns</h2>
+            <% if (albuns && albuns.length > 0) { %>
+                <div class="albuns-grid">
+                    <% albuns.forEach(function(album) { %>
+                        <a href="/albuns/<%= album.AlbumID %>" class="album-card">
+                            <div class="album-icon">
+                                <i class="fas fa-images"></i>
+                            </div>
+                            <div class="album-info">
+                                <h3><%= album.Nome %></h3>
+                                <p><%= album.Descricao || 'Sem descrição' %></p>
+                            </div>
+                        </a>
+                    <% }); %>
+                </div>
+            <% } else { %>
+                <div class="empty-state">
+                    <p>Você ainda não criou nenhum álbum. Comece fazendo um upload!</p>
+                </div>
+            <% } %>
+
+            <h2 style="margin-top: 50px;">Álbuns Compartilhados Comigo</h2>
+            <% if (albunsCompartilhados && albunsCompartilhados.length > 0) { %>
+                <div class="albuns-grid">
+                    <% albunsCompartilhados.forEach(function(album) { %>
+                        <a href="/albuns/<%= album.AlbumID %>" class="album-card">
+                            <div class="album-icon">
+                                <i class="fas fa-share-alt"></i>
+                            </div>
+                            <div class="album-info">
+                                <h3><%= album.Nome %></h3>
+                                <p>Compartilhado por: <strong><%= album.DonoDoAlbum %></strong></p>
+                            </div>
+                        </a>
+                    <% }); %>
+                </div>
+            <% } else { %>
+                <div class="empty-state">
+                    <p>Nenhum álbum foi compartilhado com você ainda.</p>
+                </div>
+            <% } %>
+
+        </main>
+        <%- include('partials/footer') %>
+
+    <% } else { %>
+        <div class="landing-container">
+            <div class="landing-box">
+                <div class="logo-container">
+                    <img src="/images/logo.png" alt="Logo Galeria Web">
+                </div>
+                <h1>Sua Vida em Imagens, Organizada.</h1>
+                <p>Guarde, organize e compartilhe seus momentos mais preciosos com facilidade e segurança.</p>
+                <div class="landing-actions">
+                    <a href="/auth/login" class="btn btn-primary">Entrar</a>
+                    <a href="/auth/cadastro" class="btn btn-secondary">Cadastre-se</a>
+                </div>
+            </div>
+        </div>
+    <% } %>
+
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+</body>
 </html>
