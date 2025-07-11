@@ -92,8 +92,14 @@
                 <div class="albuns-grid">
                     <% albuns.forEach(function(album) { %>
                         <a href="/albuns/<%= album.AlbumID %>" class="album-card">
-                            <div class="album-icon">
-                                <i class="fas fa-images"></i>
+                            <div class="album-cover">
+                                <% if (album.CapaUrl) { %>
+                                    <img src="<%= album.CapaUrl %>" alt="Capa do álbum <%= album.Nome %>">
+                                <% } else { %>
+                                    <div class="album-icon-placeholder">
+                                        <i class="fas fa-images"></i>
+                                    </div>
+                                <% } %>
                             </div>
                             <div class="album-info">
                                 <h3><%= album.Nome %></h3>

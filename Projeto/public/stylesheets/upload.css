@@ -138,3 +138,20 @@
   background-color: #218838;
   transform: translateY(-2px);
 }
+
+/* Container do preview da imagem dentro do drop-zone */
+.image-preview-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* A imagem de preview */
+.image-preview {
+    max-width: 100%;
+    max-height: 200px; /* Altura máxima da imagem */
+    object-fit: contain;
+    border-radius: 8px;
+}

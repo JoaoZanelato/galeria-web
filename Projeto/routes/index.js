@@ -14,26 +14,33 @@ function checkAuth(req, res, next) {
 router.get('/', async function(req, res, next) {
     const user = req.session.user;
 
-    // Se não houver usuário logado, renderiza a landing page.
     if (!user) {
         return res.render('index', {
             title: 'Bem-vindo à Galeria Web',
-            user: null,
-            albuns: [],
-            categorias: [],
-            tags: []
+            user: null, albuns: [], categorias: [], tags: []
         });
     }
 
-    // Se houver usuário, busca os dados para o dashboard.
     try {
-        const [albuns] = await db.query('SELECT * FROM ALBUNS WHERE UsuarioID = ? ORDER BY DataCriacao DESC', [user.id]);
+        // QUERY ATUALIZADA: Agora busca também a URL da primeira imagem de cada álbum.
+        const [albuns] = await db.query(
+            `SELECT a.*, (
+                SELECT i.Url 
+                FROM IMAGENS i
+                JOIN IMAGEM_ALBUNS ia ON i.ImagemID = ia.ImagemID
+                WHERE ia.AlbumID = a.AlbumID
+                ORDER BY i.DataUpload ASC
+                LIMIT 1
+            ) AS CapaUrl 
+            FROM ALBUNS a 
+            WHERE a.UsuarioID = ? 
+            ORDER BY a.DataCriacao DESC`, 
+            [user.id]
+        );
+
         const [categorias] = await db.query('SELECT * FROM CATEGORIAS ORDER BY Nome ASC');
         const [tags] = await db.query('SELECT * FROM TAGS WHERE UsuarioID = ? ORDER BY Nome ASC', [user.id]);
 
-        // A consulta e a variável para 'albunsCompartilhados' foram removidas.
-
-        // Renderiza a página do dashboard apenas com os dados necessários.
         res.render('index', {
             title: 'Sua Galeria',
             user: user,
@@ -43,9 +50,10 @@ router.get('/', async function(req, res, next) {
         });
     } catch (err) {
         console.error("Erro fatal ao carregar o dashboard:", err);
-        next(err); // Envia o erro para o handler de erros do Express
+        next(err);
     }
 });
+
 
 /* GET Rota Unificada de Busca e Filtros */
 router.get('/search', checkAuth, async function(req, res, next) {

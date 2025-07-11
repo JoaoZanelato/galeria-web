@@ -57,6 +57,36 @@
 }
 
 /* Grid de Álbuns */
+/* Container da capa do álbum */
+.album-cover {
+    width: 100%;
+    height: 180px; /* Altura fixa para a imagem da capa */
+    background-color: #e9ecef;
+    overflow: hidden;
+}
+
+/* A imagem da capa em si */
+.album-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Garante que a imagem cubra o espaço sem distorcer */
+    transition: transform 0.3s ease;
+}
+
+.album-card:hover .album-cover img {
+    transform: scale(1.05); /* Efeito de zoom suave ao passar o mouse */
+}
+
+/* O ícone genérico quando não há imagem */
+.album-icon-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 60px;
+    color: #adb5bd;
+}
 .albuns-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
