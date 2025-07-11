@@ -17,7 +17,6 @@ function checkAuth(req, res, next) {
  * Função auxiliar para verificar permissão de edição em um álbum.
  */
 async function checkEditPermissionForAlbum(userId, albumId, connection) {
-  // 1. Verificar se o usuário é o dono do álbum
   const [albumOwnerCheck] = await connection.query(
     "SELECT UsuarioID FROM ALBUNS WHERE AlbumID = ?",
     [albumId]
@@ -25,7 +24,6 @@ async function checkEditPermissionForAlbum(userId, albumId, connection) {
   if (albumOwnerCheck.length > 0 && albumOwnerCheck[0].UsuarioID === userId) {
     return true;
   }
-  // 2. Se não é o dono, verificar se tem permissão de 'editavel'
   const [permissionCheck] = await connection.query(
     `SELECT CompartilhamentoID FROM COMPARTILHAMENTOS
          WHERE AlbumID = ? AND UsuarioDestinatarioID = ? AND Permissao = 'editavel'`,
@@ -59,6 +57,8 @@ router.get("/upload", checkAuth, async (req, res) => {
           albunsCompartilhadosEditaveis.map((a) => ({ ...a, isShared: true }))
         ),
       categorias: categorias,
+      header_tags: [], // Passando arrays vazios para o header
+      header_categorias: [],
     });
   } catch (err) {
     console.error("Erro ao carregar a página de upload:", err);
@@ -175,9 +175,6 @@ router.get("/imagem/:id/edit", checkAuth, async (req, res, next) => {
         .send("Você não tem permissão para editar esta imagem.");
     }
 
-    const [categorias] = await db.query(
-      "SELECT * FROM CATEGORIAS ORDER BY Nome ASC"
-    );
     const [tagsAssociadas] = await db.query(
       `SELECT t.Nome FROM TAGS t
              JOIN IMAGEM_TAGS it ON t.TagID = it.TagID
@@ -185,11 +182,26 @@ router.get("/imagem/:id/edit", checkAuth, async (req, res, next) => {
       [imagemId]
     );
 
+    const [header_categorias] = await db.query(
+      "SELECT * FROM CATEGORIAS ORDER BY Nome ASC"
+    );
+    const [header_tags] = await db.query(
+      `SELECT DISTINCT t.TagID, t.Nome
+             FROM TAGS t
+             WHERE t.UsuarioID = ? 
+             ORDER BY t.Nome ASC`,
+      [usuarioId]
+    );
+
     res.render("edit-image", {
       user: req.session.user,
       imagem: imagemResult[0],
-      categorias: categorias,
-      tagsAtuais: tagsAssociadas.map((t) => t.Nome).join(", "),
+      header_tags: header_tags,
+      header_categorias: header_categorias,
+      categorias: header_categorias,
+      // *** CORREÇÃO APLICADA AQUI ***
+      // Renomeado de "tagsAtuais" para "tags_string" para corresponder ao que o EJS espera
+      tags_string: tagsAssociadas.map((t) => t.Nome).join(", "),
       error: null,
     });
   } catch (err) {
@@ -316,9 +328,6 @@ router.post("/imagem/:id/delete", checkAuth, async (req, res, next) => {
 //      ROTAS PARA COMPARTILHAMENTO DE IMAGEM INDIVIDUAL
 // ===================================================================
 
-/**
- * GET Rota para exibir a página de compartilhamento de uma imagem.
- */
 router.get("/imagem/:id/share", checkAuth, async (req, res, next) => {
   const imagemId = req.params.id;
   const ownerId = req.session.user.id;
@@ -368,9 +377,6 @@ router.get("/imagem/:id/share", checkAuth, async (req, res, next) => {
   }
 });
 
-/**
- * POST Rota para processar o compartilhamento de uma imagem.
- */
 router.post("/imagem/:id/share", checkAuth, async (req, res, next) => {
   const imagemId = req.params.id;
   const ownerId = req.session.user.id;
@@ -397,7 +403,6 @@ router.post("/imagem/:id/share", checkAuth, async (req, res, next) => {
 
     if (compartilhamentos && Array.isArray(compartilhamentos)) {
       for (const comp of compartilhamentos) {
-        // Apenas insere se a permissão for 'compartilhado' ou 'editavel'
         if (
           comp.friendId &&
           ["compartilhado", "editavel"].includes(comp.permissao)
