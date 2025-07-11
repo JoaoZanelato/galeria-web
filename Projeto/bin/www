@@ -4,9 +4,9 @@
  * Module dependencies.
  */
 
-var app = require('../app');
+var { app, server } = require('../app'); // Importar app e server
 var debug = require('debug')('projeto:server');
-var http = require('http');
+// var http = require('http'); // Não é mais necessário aqui
 
 /**
  * Get port from environment and store in Express.
@@ -16,16 +16,16 @@ var port = normalizePort(process.env.PORT || '3000');
 app.set('port', port);
 
 /**
- * Create HTTP server.
+ * Create HTTP server. (Já foi criado no app.js)
  */
 
-var server = http.createServer(app);
+// var server = http.createServer(app); // Movido para app.js
 
 /**
  * Listen on provided port, on all network interfaces.
  */
 
-server.listen(port);
+server.listen(port); // Usar server.listen
 server.on('error', onError);
 server.on('listening', onListening);
 

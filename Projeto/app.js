@@ -6,7 +6,10 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-var session = require('express-session'); // Adicionado para gerenciamento de sessão
+var session = require('express-session');
+var http = require('http'); // Importar http
+var { Server } = require("socket.io"); // Importar socket.io
+
 var compartilhadosRouter = require('./routes/compartilhados');
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -17,37 +20,31 @@ var alterarRouter = require('./routes/alterar');
 var albunsRouter = require('./routes/albuns')
 var galeriaRouter = require('./routes/galeria');
 var amizadesRouter = require('./routes/amizades');
-
-
 var tagRouter = require('./routes/tag');
 var categoriaRouter = require('./routes/categoria');
 
-
 var app = express();
-app.set('trust proxy', 1);
-// Configuração da Sessão
-// É crucial que isso venha ANTES da configuração das rotas
-app.use(session({
-  // A 'secret' é usada para assinar o cookie de ID da sessão.
-  // É importante que seja uma string longa, aleatória e mantida em segredo.
-  // Armazene-a em seu arquivo .env para segurança.
-  secret: process.env.SESSION_SECRET || 'um_segredo_muito_forte_e_dificil_de_adivinhar',
-  
-  // 'resave: false' evita que a sessão seja salva de volta no armazenamento de sessão
-  // se ela não foi modificada durante a requisição.
-  resave: false,
+var server = http.createServer(app); // Criar servidor HTTP
+var io = new Server(server); // Iniciar socket.io
 
-  // 'saveUninitialized: true' força uma sessão "não inicializada" a ser salva.
-  // Uma sessão é não inicializada quando é nova, mas não modificada.
+app.set('trust proxy', 1);
+
+const sessionMiddleware = session({
+  secret: process.env.SESSION_SECRET || 'um_segredo_muito_forte_e_dificil_de_adivinhar',
+  resave: false,
   saveUninitialized: true,
-  
-  // Configurações do cookie da sessão.
   cookie: { 
-      // Em produção, com HTTPS, você deve definir 'secure: true'.
-      // Isso garante que o navegador só envie o cookie por conexões HTTPS.
       secure: process.env.NODE_ENV === 'production' 
   }
-}));
+});
+
+app.use(sessionMiddleware);
+
+// Middleware para passar o 'io' para as rotas
+app.use((req, res, next) => {
+    req.io = io;
+    next();
+});
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -66,15 +63,30 @@ app.use('/users', usersRouter);
 app.use('/delete', deleteRouter);
 app.use('/ciptografia', ciptografiaRouter);
 app.use('/cadastro-login', cadastroLoginRouter);
-// Rota de autenticação padronizada para '/auth'
 app.use('/auth', cadastroLoginRouter); 
 app.use('/alterar', alterarRouter);
 app.use('/albuns', albunsRouter);
 app.use('/galeria', galeriaRouter);
 app.use('/amizades', amizadesRouter);
-
 app.use('/tag', tagRouter);
 app.use('/categoria', categoriaRouter);
+
+// Lógica do Socket.io
+io.on('connection', (socket) => {
+    console.log('Um usuário conectou via WebSocket:', socket.id);
+
+    // Salvar o ID do usuário no socket para uso posterior
+    socket.on('join', (userId) => {
+        socket.join(userId);
+        console.log(`Usuário ${userId} entrou na sua própria sala.`);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('Usuário desconectou:', socket.id);
+    });
+});
+
+
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   next(createError(404));
@@ -82,13 +94,11 @@ app.use(function(req, res, next) {
 
 // error handler
 app.use(function(err, req, res, next) {
-  // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
-
-  // render the error page
   res.status(err.status || 500);
   res.render('error');
 });
 
-module.exports = app;
+// Exportar o servidor em vez do app
+module.exports = { app, server };

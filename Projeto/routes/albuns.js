@@ -299,6 +299,7 @@ router.post('/:id/delete', async (req, res, next) => {
 router.post('/:id/share', async (req, res, next) => {
     const albumId = req.params.id;
     const ownerId = req.session.user.id; // O usuário logado deve ser o dono do álbum
+    const io = req.io;
 
     // Esperamos um array de objetos, onde cada objeto tem { friendId, permissao }
     const { compartilhamentos } = req.body;
@@ -309,11 +310,13 @@ router.post('/:id/share', async (req, res, next) => {
         await connection.beginTransaction();
 
         // 1. Verifica se o usuário logado é realmente o dono do álbum
-        const [albumCheck] = await connection.query('SELECT UsuarioID FROM ALBUNS WHERE AlbumID = ? AND UsuarioID = ?', [albumId, ownerId]);
+        const [albumCheck] = await connection.query('SELECT UsuarioID, Nome FROM ALBUNS WHERE AlbumID = ? AND UsuarioID = ?', [albumId, ownerId]);
         if (albumCheck.length === 0) {
             await connection.rollback();
             return res.status(403).json({ message: 'Você não tem permissão para gerenciar este álbum.' });
         }
+        const nomeAlbum = albumCheck[0].Nome;
+        const nomeRemetente = req.session.user.nome;
 
         // 2. Remove todos os compartilhamentos existentes para este álbum primeiro,
         // e depois adiciona os novos/atualizados.
@@ -329,6 +332,12 @@ router.post('/:id/share', async (req, res, next) => {
                         'INSERT INTO COMPARTILHAMENTOS (UsuarioRemetenteID, UsuarioDestinatarioID, AlbumID, Permissao) VALUES (?, ?, ?, ?)',
                         [ownerId, comp.friendId, albumId, comp.permissao]
                     );
+
+                    // EMITIR EVENTO WEBSOCKET
+                    io.to(comp.friendId.toString()).emit('novo_compartilhamento', {
+                        message: `${nomeRemetente} compartilhou o álbum "${nomeAlbum}" com você.`,
+                        tipo: 'album'
+                    });
                 } else {
                     console.warn(`Compartilhamento inválido ignorado para AlbumID ${albumId}:`, comp);
                 }

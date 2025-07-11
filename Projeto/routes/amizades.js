@@ -121,6 +121,8 @@ router.post('/buscar', checkAuth, async (req, res, next) => {
 router.post('/solicitar/:destinatarioId', checkAuth, async (req, res, next) => {
     const solicitanteId = req.session.user.id;
     const destinatarioId = req.params.destinatarioId;
+    const solicitanteNome = req.session.user.nome;
+    const io = req.io;
 
     if (solicitanteId == destinatarioId) {
         return res.status(400).json({ message: 'Você não pode enviar solicitação para si mesmo.' });
@@ -147,6 +149,12 @@ router.post('/solicitar/:destinatarioId', checkAuth, async (req, res, next) => {
             'INSERT INTO AMIZADES (UsuarioSolicitanteID, UsuarioAceitanteID, Status) VALUES (?, ?, ?)',
             [solicitanteId, destinatarioId, 'pendente']
         );
+        
+        // EMITIR EVENTO WEBSOCKET
+        io.to(destinatarioId.toString()).emit('nova_solicitacao', { 
+            message: `Você recebeu uma nova solicitação de amizade de ${solicitanteNome}.`,
+            remetente: solicitanteNome
+        });
 
         res.json({ success: true, message: 'Solicitação de amizade enviada com sucesso!' });
 
@@ -161,6 +169,7 @@ router.post('/responder/:amizadeId', checkAuth, async (req, res, next) => {
     const amizadeId = req.params.amizadeId;
     const usuarioAceitanteId = req.session.user.id;
     const { acao } = req.body; // 'aceitar' ou 'recusar'
+    const io = req.io;
 
     if (acao !== 'aceitar' && acao !== 'recusar') {
         return res.status(400).json({ message: 'Ação inválida.' });
@@ -185,6 +194,17 @@ router.post('/responder/:amizadeId', checkAuth, async (req, res, next) => {
             [novoStatus, dataInicioAmizade, amizadeId]
         );
 
+        // EMITIR EVENTO WEBSOCKET para o solicitante
+        const solicitanteId = amizade[0].UsuarioSolicitanteID;
+        const nomeUsuarioLogado = req.session.user.nome;
+        
+        if (acao === 'aceitar') {
+            io.to(solicitanteId.toString()).emit('solicitacao_aceita', {
+                message: `${nomeUsuarioLogado} aceitou sua solicitação de amizade!`,
+                amigo: nomeUsuarioLogado
+            });
+        }
+
         res.json({ success: true, message: `Solicitação ${acao} com sucesso!` });
 
     } catch (err) {
@@ -197,6 +217,7 @@ router.post('/responder/:amizadeId', checkAuth, async (req, res, next) => {
 router.post('/remover/:amizadeId', checkAuth, async (req, res, next) => {
     const amizadeId = req.params.amizadeId;
     const userId = req.session.user.id; // O usuário que está tentando remover
+    const io = req.io;
 
     try {
         // Verifica se a amizade existe e se um dos usuários é o logado (para evitar remoção indevida)
@@ -208,8 +229,16 @@ router.post('/remover/:amizadeId', checkAuth, async (req, res, next) => {
         if (amizade.length === 0) {
             return res.status(404).json({ message: 'Amizade não encontrada ou você não tem permissão.' });
         }
+        
+        const outroUsuarioId = amizade[0].UsuarioSolicitanteID === userId ? amizade[0].UsuarioAceitanteID : amizade[0].UsuarioSolicitanteID;
+        const nomeUsuarioLogado = req.session.user.nome;
 
         await db.query('DELETE FROM AMIZADES WHERE AmizadeID = ?', [amizadeId]);
+
+        // EMITIR EVENTO WEBSOCKET para o outro usuário
+        io.to(outroUsuarioId.toString()).emit('amizade_removida', {
+            message: `${nomeUsuarioLogado} desfez a amizade com você.`
+        });
 
         res.json({ success: true, message: 'Amizade removida com sucesso.' });
 
