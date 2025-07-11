@@ -3,8 +3,17 @@ const router = express.Router();
 const db = require('../db/db');
 const { cloudinary } = require('../config/cloudinary'); // Importar cloudinary
 
+// Middleware para verificar autenticação (você já deve ter um similar)
+function checkAuth(req, res, next) {
+    if (!req.session.user) {
+        return res.redirect('/auth/login');
+    }
+    next();
+}
+
+
 /* GET para a página de um álbum específico (Visualização do Álbum) */
-router.get('/:id', async function(req, res, next) {
+router.get('/:id', checkAuth, async function(req, res, next) {
     const albumId = req.params.id;
     const user = req.session.user; // O usuário logado que está acessando a página
 
@@ -101,6 +110,70 @@ router.get('/:id', async function(req, res, next) {
         next(err);
     }
 });
+
+
+// NOVA ROTA GET PARA A PÁGINA DE EDIÇÃO DO ÁLBUM
+router.get('/:id/edit', checkAuth, async (req, res, next) => {
+    const albumId = req.params.id;
+    const usuarioId = req.session.user.id;
+
+    try {
+        const [albumResult] = await db.query(
+            'SELECT * FROM ALBUNS WHERE AlbumID = ? AND UsuarioID = ?',
+            [albumId, usuarioId]
+        );
+
+        if (albumResult.length === 0) {
+            return res.status(403).send('Você não tem permissão para editar este álbum.');
+        }
+
+        res.render('edit-album', {
+            user: req.session.user,
+            album: albumResult[0],
+            error: null
+        });
+
+    } catch (err) {
+        console.error('Erro ao carregar página de edição do álbum:', err);
+        next(err);
+    }
+});
+
+// NOVA ROTA POST PARA ATUALIZAR O ÁLBUM
+router.post('/:id/edit', checkAuth, async (req, res, next) => {
+    const albumId = req.params.id;
+    const usuarioId = req.session.user.id;
+    const { nome, descricao } = req.body;
+
+    if (!nome) {
+        // Recarrega a página com erro se o nome estiver vazio
+        const [albumResult] = await db.query('SELECT * FROM ALBUNS WHERE AlbumID = ? AND UsuarioID = ?', [albumId, usuarioId]);
+        return res.render('edit-album', {
+            user: req.session.user,
+            album: albumResult[0],
+            error: 'O nome do álbum é obrigatório.'
+        });
+    }
+
+    try {
+        // Garante que o usuário é o dono antes de atualizar
+        const [updateResult] = await db.query(
+            'UPDATE ALBUNS SET Nome = ?, Descricao = ?, DataModificacao = NOW() WHERE AlbumID = ? AND UsuarioID = ?',
+            [nome, descricao, albumId, usuarioId]
+        );
+
+        if (updateResult.affectedRows === 0) {
+            return res.status(403).send('Você não tem permissão para editar este álbum ou o álbum não foi encontrado.');
+        }
+
+        res.redirect(`/albuns/${albumId}`);
+
+    } catch (err) {
+        console.error('Erro ao atualizar o álbum:', err);
+        next(err);
+    }
+});
+
 
 /**
  * Rota GET para a página de gerenciamento de compartilhamento de um álbum específico.

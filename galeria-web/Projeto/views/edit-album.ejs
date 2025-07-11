@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Álbum - Galeria Web</title>
+    <link rel="stylesheet" href="/stylesheets/style.css">
+    <link rel="stylesheet" href="/stylesheets/upload.css"> </head>
+<body>
+    <%- include('partials/header') %> <div class="upload-container-wrapper">
+        <div class="upload-box">
+            <h1>Editar Álbum</h1>
+
+            <% if (error) { %>
+                <div class="auth-error" style="text-align: center;"><%= error %></div>
+            <% } %>
+
+            <form action="/albuns/<%= album.AlbumID %>/edit" method="POST">
+                <div class="form-group">
+                    <label for="nome">Nome do Álbum</label>
+                    <input type="text" id="nome" name="nome" class="form-control" value="<%= album.Nome %>" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="descricao">Descrição</label>
+                    <textarea id="descricao" name="descricao" class="form-control" rows="4"><%= album.Descricao %></textarea>
+                </div>
+                
+                <hr class="separator">
+
+                <button type="submit" class="submit-btn" style="background-color: var(--accent-color);">Salvar Alterações</button>
+            </form>
+             <a href="/albuns/<%= album.AlbumID %>" class="btn" style="margin-top: 15px; background-color: #6c757d; color: white; display: block; text-align: center;">Cancelar</a>
+        </div>
+    </div>
+</body>
+</html>

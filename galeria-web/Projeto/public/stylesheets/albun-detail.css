@@ -22,6 +22,7 @@
   line-height: 1.6;
 }
 
+.album-action-button { min-width: 120px; }
 /* O cabeçalho de cada seção, tipo o "Imagens do Álbum" */
 .section-header {
     display: flex;
