@@ -6,7 +6,7 @@
         user: user,
         tags: [],
         categorias: [],
-        page_css: 'dashboard' // usa o CSS do dashboard ou troca se quiser um visual diferente
+        page_css: 'dashboard'
     }) %>
 
     <style>
@@ -106,7 +106,6 @@
             <h1>Compartilhar Álbum: <%= album.Nome %></h1>
             <p style="text-align: center; color: #666; margin-bottom: 25px;">Selecione amigos e defina as permissões para este álbum.</p>
 
-            <!-- Se der erro ou sucesso, exibe aqui -->
             <% if (typeof error !== 'undefined' && error) { %>
                 <p class="status-message error" style="text-align: center;"><%= error %></p>
             <% } %>
@@ -114,7 +113,6 @@
                 <p class="status-message success" style="text-align: center;"><%= success %></p>
             <% } %>
 
-            <!-- Formulário com os amigos pra definir as permissões -->
             <form id="shareForm" class="share-form">
                 <input type="hidden" name="albumId" value="<%= album.AlbumID %>">
 
@@ -127,16 +125,14 @@
                             %>
                             <div class="friend-share-item">
                                 <span><%= amigo.NomeUsuario %></span>
-                                <!-- Select de permissão pro amigo -->
                                 <select name="permissao_<%= amigo.UsuarioID %>" data-friend-id="<%= amigo.UsuarioID %>" class="form-control">
                                     <option value="">Não Compartilhar</option>
-                                    <option value="visualizar" <%= currentPermissao && currentPermissao.Permissao === 'visualizar' ? 'selected' : '' %>>Visualizar</option>
-                                    <option value="editar" <%= currentPermissao && currentPermissao.Permissao === 'editar' ? 'selected' : '' %>>Editar (Ver e Adicionar/Deletar)</option>
+                                    <option value="compartilhado" <%= currentPermissao && currentPermissao.Permissao === 'compartilhado' ? 'selected' : '' %>>Visualizar</option>
+                                    <option value="editavel" <%= currentPermissao && currentPermissao.Permissao === 'editavel' ? 'selected' : '' %>>Editar (Ver e Adicionar/Deletar)</option>
                                 </select>
                             </div>
                         <% }) %>
                     <% } else { %>
-                        <!-- Caso não tenha amigos -->
                         <div class="empty-friends-state">
                             <p>Você ainda não tem amigos para compartilhar.</p>
                             <a href="/amizades" class="btn btn-secondary">Adicionar Amigos</a>
@@ -168,7 +164,8 @@
                         const friendId = select.dataset.friendId;
                         const permissao = select.value;
 
-                        if (permissao) {
+                        // Adiciona ao array somente se uma permissão válida for selecionada
+                        if (permissao === 'compartilhado' || permissao === 'editavel') { // Apenas valores que o backend espera
                             compartilhamentos.push({
                                 friendId: parseInt(friendId),
                                 permissao: permissao
@@ -189,6 +186,8 @@
 
                         if (result.success) {
                             alert(result.message); // Mostra retorno do servidor
+                            // Opcional: Recarregar a página para mostrar o estado atualizado das permissões
+                            // window.location.reload();
                         } else {
                             alert('Erro ao salvar permissões: ' + result.message);
                         }
