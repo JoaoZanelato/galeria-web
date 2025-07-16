@@ -382,4 +382,5 @@ router.post("/:id/share", checkAuth, async (req, res, next) => {
   }
 });
 
-// Exporta o roteador para ser usado em
+// Exporta o roteador para ser usado em outros
+module.exports = router;

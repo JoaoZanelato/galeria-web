@@ -60,3 +60,4 @@ router.get('/', checkAuth, async (req, res, next) => {
 });
 
 // Exporta o roteador para ser usado em outros arquivos do projeto
+module.exports = router;

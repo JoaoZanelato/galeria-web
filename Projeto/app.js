@@ -5,13 +5,13 @@ require('./db/db');
 
 // Importa módulos essenciais do Node.js e Express
 var createError = require('http-errors'); // Para lidar com erros HTTP
-var express = require('express');         // Framework principal
-var path = require('path');               // Manipulação de caminhos de arquivos
+var express = require('express');       // Framework principal
+var path = require('path');             // Manipulação de caminhos de arquivos
 var cookieParser = require('cookie-parser'); // Lê cookies das requisições
-var logger = require('morgan');           // Middleware de log de requisições
+var logger = require('morgan');         // Middleware de log de requisições
 var session = require('express-session'); // Gerenciamento de sessões
-var http = require('http');               // Módulo HTTP para criar servidor
-var { Server } = require("socket.io");    // Importa socket.io para WebSockets
+var http = require('http');             // Módulo HTTP para criar servidor
+var { Server } = require("socket.io");  // Importa socket.io para WebSockets
 
 // Importa os arquivos de rotas do projeto
 var compartilhadosRouter = require('./routes/compartilhados');
@@ -35,7 +35,7 @@ app.set('trust proxy', 1);
 // Configuração do middleware de sessão
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || 'um_segredo_muito_forte_e_dificil_de_adivinhar', // Chave secreta da sessão
-  resave: false,            // Não salva a sessão se nada mudou
+  resave: false,          // Não salva a sessão se nada mudou
   saveUninitialized: true,  // Salva sessões novas, mesmo que não modificadas
   cookie: { 
       secure: process.env.NODE_ENV === 'production' // Cookies seguros apenas em produção
@@ -55,9 +55,6 @@ app.use((req, res, next) => {
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
-// Rota específica para compartilhados (antes do logger para garantir prioridade)
-app.use('/compartilhados', compartilhadosRouter);
-
 // Middlewares globais
 app.use(logger('dev')); // Log de requisições HTTP
 app.use(express.json()); // Parse de JSON no corpo da requisição
@@ -72,6 +69,8 @@ app.use('/albuns', albunsRouter);
 app.use('/galeria', galeriaRouter);
 app.use('/amizades', amizadesRouter);
 app.use('/tag', tagRouter);
+app.use('/compartilhados', compartilhadosRouter);
+
 
 // Lógica do Socket.io para eventos em tempo real
 io.on('connection', (socket) => {

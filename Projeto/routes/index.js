@@ -204,4 +204,4 @@ router.get("/settings", checkAuth, (req, res) => {
 });
 
 // Exporta o roteador para ser usado em outros arquivos do projeto
-module.exports
+module.exports = router;

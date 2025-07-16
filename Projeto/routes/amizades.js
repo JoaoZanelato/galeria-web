@@ -255,3 +255,4 @@ router.post('/remover/:amizadeId', checkAuth, async (req, res, next) => {
 });
 
 // Exporta o roteador para ser usado em outros
+module.exports = router;
