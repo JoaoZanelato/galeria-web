@@ -1,28 +1,39 @@
 // routes/tag.js
+
+// Importa o módulo express para criar rotas
 const express = require('express');
+// Cria um novo roteador do Express
 const router = express.Router();
-const db = require('../db/db'); // db é o seu pool de conexões do mysql2/promise
+// Importa o módulo de acesso ao banco de dados (pool de conexões mysql2/promise)
+const db = require('../db/db');
 
 // Rota de teste existente
+// Quando acessa /tag, retorna uma mensagem simples
 router.get('/', (req, res) => {
     res.send('Página de gerenciamento de tags - em construção!');
 });
 
 // Nova rota para buscar imagens por tag
+// Exemplo de uso: /tag/search?tag=minhatag
 router.get('/search', async (req, res) => {
-    const { tag } = req.query; // Pega a tag da query string (ex: /tag/search?tag=minhatag)
-    const userId = req.session.user ? req.session.user.id : null; // Pega o ID do usuário logado
+    // Obtém o parâmetro 'tag' da query string
+    const { tag } = req.query;
+    // Obtém o ID do usuário logado (se existir na sessão)
+    const userId = req.session.user ? req.session.user.id : null;
 
+    // Valida se o parâmetro 'tag' foi informado
     if (!tag) {
         return res.status(400).json({ message: 'Parâmetro "tag" é obrigatório.' });
     }
-    // É importante ter um usuário logado para buscar suas tags/imagens
+    // Valida se o usuário está autenticado
     if (!userId) {
         return res.status(401).json({ message: 'Usuário não autenticado.' });
     }
 
     try {
-        // Consulta SQL CORRETA para buscar imagens por tag, considerando o usuário logado
+        // Consulta SQL para buscar imagens do usuário que possuem a tag informada
+        // Usa LIKE para buscar tags parcialmente (ex: "flo" encontra "flor")
+        // DISTINCT evita imagens duplicadas caso tenham múltiplas tags semelhantes
         const sql = `
             SELECT DISTINCT
                 i.ImagemID,
@@ -39,20 +50,21 @@ router.get('/search', async (req, res) => {
             WHERE t.Nome LIKE ? AND i.UsuarioID = ?;
             -- DISTINCT para evitar imagens duplicadas se houver várias tags correspondentes
         `;
+        // Monta o termo de busca para o LIKE
         const searchTerm = `%${tag}%`;
 
-        // Executa a query usando o pool.query()
+        // Executa a consulta no banco de dados
         const [images] = await db.query(sql, [searchTerm, userId]);
 
-        res.json(images); // Retorna as imagens encontradas como JSON
+        // Retorna as imagens encontradas como JSON
+        res.json(images);
 
     } catch (error) {
+        // Em caso de erro, registra no console e retorna erro genérico ao cliente
         console.error('Erro ao buscar imagens por tag:', error);
-        // Em um ambiente de produção, não retorne detalhes do erro SQL diretamente ao cliente.
-        // Apenas uma mensagem genérica de erro interno.
         res.status(500).json({ message: 'Erro interno do servidor ao buscar imagens.' });
     }
 });
 
-// ESSENCIAL: Exportar o objeto router
+// Exporta o roteador para ser usado em outros arquivos do projeto
 module.exports = router;

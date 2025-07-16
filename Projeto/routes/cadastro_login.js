@@ -1,56 +1,62 @@
+// Importa o módulo express para criar rotas
 const express = require('express');
+// Cria um novo roteador do Express
 const router = express.Router();
-const bcrypt = require('bcryptjs'); // Para criptografar as senhas
-const db = require('../db/db'); // Nosso pool de conexão com o banco de dados
+// Importa o módulo bcryptjs para criptografar senhas
+const bcrypt = require('bcryptjs');
+// Importa o pool de conexão com o banco de dados
+const db = require('../db/db');
+// Importa o Cloudinary para manipulação de imagens
 const {cloudinary} = require('../config/cloudinary')
 
-// --- ROTAS GET PARA RENDERIZAR AS PÁGINAS ---
-
+// --- Função middleware para verificar se o usuário está autenticado ---
 function checkAuth(req, res, next) {
   if(!req.session.user) {
+    // Se não estiver logado, redireciona para login
     return res.redirect('/auth/login')
   }
   next();
 }
 
-/* * Rota GET para a página de cadastro.
- * Simplesmente renderiza o arquivo de visualização 'cadastro.ejs'.
- */
+// --- ROTAS GET PARA RENDERIZAR AS PÁGINAS ---
+
+/* Rota GET para a página de cadastro.
+   Renderiza o arquivo de visualização 'cadastro.ejs'.
+*/
 router.get('/cadastro', function(req, res, next) {
   // Renderiza a página de cadastro (views/cadastro.ejs)
   res.render('cadastro', { error: null, user: req.session.user || null });
 });
 
-/* * Rota GET para a página de login.
- * Simplesmente renderiza o arquivo de visualização 'login.ejs'.
- */
+/* Rota GET para a página de login.
+   Renderiza o arquivo de visualização 'login.ejs'.
+*/
 router.get('/login', function(req, res, next) {
   // Renderiza a página de login (views/login.ejs)
   res.render('login', { error: null, user: req.session.user || null });
 });
 
-
 // --- ROTAS POST PARA PROCESSAR OS FORMULÁRIOS ---
 
-/**
- * Rota POST para registrar um novo usuário.
- * Acessada quando o formulário de cadastro é enviado.
- */
+/* Rota POST para registrar um novo usuário.
+   Processa o formulário de cadastro.
+*/
 router.post('/cadastro', async (req, res, next) => {
-  // 1. Extrai os dados do corpo da requisição (do formulário)
+  // Extrai os dados do formulário
   const { nomeUsuario, email, senha, confirmar_senha } = req.body;
 
-  // 2. Validação dos campos
+  // Validação dos campos obrigatórios
   if (!nomeUsuario || !email || !senha || !confirmar_senha) {
     return res.render('cadastro', { error: 'Todos os campos são obrigatórios!', user: req.session.user || null });
   }
 
+  // Verifica se as senhas coincidem
   if (senha !== confirmar_senha) {
     return res.render('cadastro', { error: 'As senhas não coincidem!', user: req.session.user || null });
   }
 
   try {
-    // 3. Verifica se o email ou o nome de usuário já existem no banco
+    // Verifica se o email ou nome de usuário já existem
     const [existingUsers] = await db.query(
       'SELECT Email, NomeUsuario FROM USUARIOS WHERE Email = ? OR NomeUsuario = ?',
       [email, nomeUsuario]
@@ -60,16 +66,16 @@ router.post('/cadastro', async (req, res, next) => {
       return res.render('cadastro', { error: 'Email ou nome de usuário já cadastrado.', user: req.session.user || null });
     }
 
-    // 4. Criptografa a senha antes de salvar no banco
+    // Criptografa a senha antes de salvar
     const senhaHash = await bcrypt.hash(senha, 10);
 
-    // 5. Insere o novo usuário no banco de dados
+    // Insere o novo usuário no banco de dados
     await db.query(
       'INSERT INTO USUARIOS (NomeUsuario, Email, SenhaHash) VALUES (?, ?, ?)',
       [nomeUsuario, email, senhaHash]
     );
 
-    // 6. Redireciona para a página de login após o sucesso
+    // Redireciona para a página de login após cadastro
     res.redirect('/auth/login');
 
   } catch (err) {
@@ -78,60 +84,57 @@ router.post('/cadastro', async (req, res, next) => {
   }
 });
 
-
-/**
- * Rota POST para autenticar um usuário (fazer o login).
- * Acessada quando o formulário de login é enviado.
- */
+/* Rota POST para autenticar um usuário (login).
+   Processa o formulário de login.
+*/
 router.post('/login', async (req, res, next) => {
-  // 1. Extrai email e senha do formulário
+  // Extrai email e senha do formulário
   const { email, senha } = req.body;
 
-  // 2. Validação simples
+  // Validação dos campos obrigatórios
   if (!email || !senha) {
     return res.render('login', { error: 'Email e senha são obrigatórios!', user: null });
   }
 
   try {
-    // 3. Busca o usuário no banco de dados pelo email
+    // Busca o usuário no banco de dados pelo email
     const [rows] = await db.query(
       'SELECT * FROM USUARIOS WHERE Email = ?',
       [email]
     );
 
-    // 4. Se o usuário não for encontrado, retorna um erro genérico
+    // Se não encontrar usuário, retorna erro genérico
     if (rows.length === 0) {
       return res.render('login', { error: 'Credenciais inválidas.', user: null });
     }
 
     const usuario = rows[0];
 
-    // 5. Compara a senha enviada com a senha criptografada (hash) do banco
+    // Compara a senha enviada com o hash do banco
     const senhaCorreta = await bcrypt.compare(senha, usuario.SenhaHash);
 
     if (!senhaCorreta) {
-      // Se a senha estiver incorreta, retorna o mesmo erro genérico por segurança
+      // Se a senha estiver incorreta, retorna erro genérico
       return res.render('login', { error: 'Credenciais inválidas.', user: null });
     }
 
     // --- SUCESSO NO LOGIN ---
-    // 6. Salva as informações do usuário na sessão.
-    // NUNCA salve a senha ou o hash da senha na sessão.
+    // Salva as informações do usuário na sessão (sem senha/hash)
     req.session.user = {
       id: usuario.UsuarioID,
       nome: usuario.NomeUsuario,
       email: usuario.Email
     };
 
-    // DEBUG: Linha para verificar o conteúdo da sessão antes de redirecionar
+    // DEBUG: Exibe a sessão no console
     console.log('Sessão logo após o login:', req.session);
 
-    // 7. Força o salvamento da sessão antes de redirecionar para evitar problemas de timing
+    // Força o salvamento da sessão antes de redirecionar
     req.session.save((err) => {
       if (err) {
         return next(err);
       }
-      // 8. Redireciona para a página principal, que agora mostrará o dashboard
+      // Redireciona para a página principal (dashboard)
       res.redirect('/');
     });
 
@@ -141,20 +144,24 @@ router.post('/login', async (req, res, next) => {
   }
 });
 
-/* Rota GET para fazer logout do usuário. */
+/* Rota GET para fazer logout do usuário.
+   Remove a sessão e redireciona para a página inicial.
+*/
 router.get('/logout', (req, res, next) => {
   // O método destroy() remove a sessão.
   req.session.destroy((err) => {
     if (err) {
-      // Se houver um erro ao destruir a sessão, encaminhe para o error handler.
+      // Se houver erro ao destruir a sessão, encaminha para o error handler.
       return next(err);
     }
-    // Após destruir a sessão, redireciona o usuário para a página inicial.
+    // Após destruir a sessão, redireciona para a página inicial.
     res.redirect('/');
   });
 });
 
-/* Rota POST para Apagar a Conta */
+/* Rota POST para Apagar a Conta do Usuário.
+   Remove o usuário e suas imagens do banco e do Cloudinary.
+*/
 router.post('/delete', checkAuth, async (req, res, next) =>{
   const usuarioId = req.session.user.id;
   const connection = await db.getConnection();
@@ -162,18 +169,22 @@ router.post('/delete', checkAuth, async (req, res, next) =>{
   try{
     await connection.beginTransaction();
 
+    // Busca todas as imagens do usuário
     const [imagens] = await connection.query('SELECT NomeArquivo FROM IMAGENS WHERE UsuarioID = ?', [usuarioId]);
 
+    // Remove as imagens do Cloudinary se houver
     if (imagens.length > 0) {
       const publicIds = imagens.map(img => img.NomeArquivo);
 
       console.log(`A apagar ${publicIds.length} imagens da Cloudinary...`)
       await cloudinary.api.delete_resources(publicIds);
     }
+    // Remove o usuário do banco de dados
     await connection.query('DELETE FROM USUARIOS WHERE UsuarioID = ?', [usuarioId])
     
     await connection.commit();
 
+    // Destroi a sessão e redireciona para a página inicial
     req.session.destroy((err) => {
       if(err) {return next(err)}
       res.redirect('/');
@@ -187,5 +198,5 @@ router.post('/delete', checkAuth, async (req, res, next) =>{
   }
 })
 
-
+// Exporta o roteador para ser usado em outros arquivos do projeto
 module.exports = router;

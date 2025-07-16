@@ -1,3 +1,4 @@
+// Importação dos módulos necessários
 const express = require("express");
 const router = express.Router();
 const multer = require("multer");
@@ -15,8 +16,10 @@ function checkAuth(req, res, next) {
 
 /**
  * Função auxiliar para verificar permissão de edição em um álbum.
+ * Retorna true se o usuário for dono ou tiver permissão 'editavel' via compartilhamento.
  */
 async function checkEditPermissionForAlbum(userId, albumId, connection) {
+  // Verifica se o usuário é dono do álbum
   const [albumOwnerCheck] = await connection.query(
     "SELECT UsuarioID FROM ALBUNS WHERE AlbumID = ?",
     [albumId]
@@ -24,6 +27,7 @@ async function checkEditPermissionForAlbum(userId, albumId, connection) {
   if (albumOwnerCheck.length > 0 && albumOwnerCheck[0].UsuarioID === userId) {
     return true;
   }
+  // Verifica se o usuário tem permissão 'editavel' via compartilhamento
   const [permissionCheck] = await connection.query(
     `SELECT CompartilhamentoID FROM COMPARTILHAMENTOS
          WHERE AlbumID = ? AND UsuarioDestinatarioID = ? AND Permissao = 'editavel'`,
@@ -36,19 +40,23 @@ async function checkEditPermissionForAlbum(userId, albumId, connection) {
 router.get("/upload", checkAuth, async (req, res) => {
   try {
     const userId = req.session.user.id;
+    // Busca álbuns do usuário
     const [meusAlbuns] = await db.query(
       "SELECT AlbumID, Nome FROM ALBUNS WHERE UsuarioID = ?",
       [userId]
     );
+    // Busca álbuns compartilhados com permissão de edição
     const [albunsCompartilhadosEditaveis] = await db.query(
       `SELECT a.AlbumID, a.Nome, u.NomeUsuario AS DonoDoAlbum
              FROM ALBUNS a JOIN COMPARTILHAMENTOS c ON a.AlbumID = c.AlbumID JOIN USUARIOS u ON a.UsuarioID = u.UsuarioID
              WHERE c.UsuarioDestinatarioID = ? AND c.Permissao = 'editavel'`,
       [userId]
     );
+    // Busca categorias disponíveis
     const [categorias] = await db.query(
       "SELECT CategoriaID, Nome FROM CATEGORIAS ORDER BY Nome ASC"
     );
+    // Renderiza página de upload
     res.render("upload", {
       user: req.session.user,
       albuns: meusAlbuns
@@ -72,6 +80,7 @@ router.post(
   checkAuth,
   upload.single("imagem"),
   async (req, res, next) => {
+    // Extrai dados do formulário
     const {
       descricao,
       tipoAlbum,
@@ -88,6 +97,7 @@ router.post(
     const connection = await db.getConnection();
     try {
       await connection.beginTransaction();
+      // Cria novo álbum se selecionado
       if (tipoAlbum === "novo" && album_novo_nome) {
         const [result] = await connection.query(
           "INSERT INTO ALBUNS (Nome, Descricao, UsuarioID) VALUES (?, ?, ?)",
@@ -96,6 +106,7 @@ router.post(
         albumId = result.insertId;
       } else if (tipoAlbum === "existente" && album_existente) {
         albumId = album_existente;
+        // Verifica permissão de edição
         const canEdit = await checkEditPermissionForAlbum(
           usuarioID,
           albumId,
@@ -110,15 +121,18 @@ router.post(
           "Você deve selecionar um álbum existente ou criar um novo."
         );
       }
+      // Insere imagem
       const [imagemResult] = await connection.query(
         "INSERT INTO IMAGENS (NomeArquivo, Url, Descricao, UsuarioID, CategoriaID) VALUES (?, ?, ?, ?, ?)",
         [filename, url, descricao, usuarioID, categoria_id || null]
       );
       const imagemId = imagemResult.insertId;
+      // Relaciona imagem ao álbum
       await connection.query(
         "INSERT INTO IMAGEM_ALBUNS (ImagemID, AlbumID) VALUES (?, ?)",
         [imagemId, albumId]
       );
+      // Processa tags
       if (tags && tags.trim() !== "") {
         const tagsArray = tags
           .split(",")
@@ -164,6 +178,7 @@ router.get("/imagem/:id/edit", checkAuth, async (req, res, next) => {
   const usuarioId = req.session.user.id;
 
   try {
+    // Busca imagem do usuário
     const [imagemResult] = await db.query(
       "SELECT * FROM IMAGENS WHERE ImagemID = ? AND UsuarioID = ?",
       [imagemId, usuarioId]
@@ -175,6 +190,7 @@ router.get("/imagem/:id/edit", checkAuth, async (req, res, next) => {
         .send("Você não tem permissão para editar esta imagem.");
     }
 
+    // Busca tags associadas à imagem
     const [tagsAssociadas] = await db.query(
       `SELECT t.Nome FROM TAGS t
              JOIN IMAGEM_TAGS it ON t.TagID = it.TagID
@@ -182,6 +198,7 @@ router.get("/imagem/:id/edit", checkAuth, async (req, res, next) => {
       [imagemId]
     );
 
+    // Busca categorias e tags para o header
     const [header_categorias] = await db.query(
       "SELECT * FROM CATEGORIAS ORDER BY Nome ASC"
     );
@@ -193,14 +210,13 @@ router.get("/imagem/:id/edit", checkAuth, async (req, res, next) => {
       [usuarioId]
     );
 
+    // Renderiza página de edição
     res.render("edit-image", {
       user: req.session.user,
       imagem: imagemResult[0],
       header_tags: header_tags,
       header_categorias: header_categorias,
       categorias: header_categorias,
-      // *** CORREÇÃO APLICADA AQUI ***
-      // Renomeado de "tagsAtuais" para "tags_string" para corresponder ao que o EJS espera
       tags_string: tagsAssociadas.map((t) => t.Nome).join(", "),
       error: null,
     });
@@ -221,6 +237,7 @@ router.post("/imagem/:id/edit", checkAuth, async (req, res, next) => {
   try {
     await connection.beginTransaction();
 
+    // Atualiza dados da imagem
     const [updateResult] = await connection.query(
       "UPDATE IMAGENS SET Descricao = ?, CategoriaID = ?, DataModificacao = NOW() WHERE ImagemID = ? AND UsuarioID = ?",
       [descricao, categoria_id || null, imagemId, usuarioId]
@@ -232,9 +249,11 @@ router.post("/imagem/:id/edit", checkAuth, async (req, res, next) => {
       );
     }
 
+    // Remove tags antigas
     await connection.query("DELETE FROM IMAGEM_TAGS WHERE ImagemID = ?", [
       imagemId,
     ]);
+    // Adiciona novas tags
     if (tags && tags.trim() !== "") {
       const tagsArray = tags
         .split(",")
@@ -264,6 +283,7 @@ router.post("/imagem/:id/edit", checkAuth, async (req, res, next) => {
 
     await connection.commit();
 
+    // Redireciona para o álbum da imagem
     const [albumLink] = await db.query(
       "SELECT AlbumID FROM IMAGEM_ALBUNS WHERE ImagemID = ? LIMIT 1",
       [imagemId]
@@ -292,6 +312,7 @@ router.post("/imagem/:id/delete", checkAuth, async (req, res, next) => {
   try {
     await connection.beginTransaction();
 
+    // Verifica se a imagem pertence ao usuário
     const [imagemResult] = await connection.query(
       "SELECT NomeArquivo FROM IMAGENS WHERE ImagemID = ? AND UsuarioID = ?",
       [imagemId, usuarioId]
@@ -306,13 +327,16 @@ router.post("/imagem/:id/delete", checkAuth, async (req, res, next) => {
 
     const nomeArquivo = imagemResult[0].NomeArquivo;
 
+    // Remove imagem do Cloudinary
     await cloudinary.uploader.destroy(nomeArquivo);
+    // Remove imagem do banco
     await connection.query("DELETE FROM IMAGENS WHERE ImagemID = ?", [
       imagemId,
     ]);
 
     await connection.commit();
 
+    // Redireciona para página anterior ou home
     const redirectUrl = req.headers.referer || "/";
     res.redirect(redirectUrl);
   } catch (err) {
@@ -328,11 +352,13 @@ router.post("/imagem/:id/delete", checkAuth, async (req, res, next) => {
 //      ROTAS PARA COMPARTILHAMENTO DE IMAGEM INDIVIDUAL
 // ===================================================================
 
+// GET: Exibe página de compartilhamento de imagem
 router.get("/imagem/:id/share", checkAuth, async (req, res, next) => {
   const imagemId = req.params.id;
   const ownerId = req.session.user.id;
 
   try {
+    // Busca imagem do usuário
     const [imagemResult] = await db.query(
       "SELECT ImagemID, Url, Descricao FROM IMAGENS WHERE ImagemID = ? AND UsuarioID = ?",
       [imagemId, ownerId]
@@ -347,6 +373,7 @@ router.get("/imagem/:id/share", checkAuth, async (req, res, next) => {
     }
     const imagem = imagemResult[0];
 
+    // Busca amigos do usuário
     const [amigos] = await db.query(
       `SELECT u.UsuarioID, u.NomeUsuario FROM AMIZADES a
              JOIN USUARIOS u ON (a.UsuarioSolicitanteID = u.UsuarioID OR a.UsuarioAceitanteID = u.UsuarioID)
@@ -354,12 +381,14 @@ router.get("/imagem/:id/share", checkAuth, async (req, res, next) => {
       [ownerId, ownerId, ownerId]
     );
 
+    // Busca compartilhamentos já existentes para a imagem
     const [compartilhamentosExistentes] = await db.query(
       `SELECT c.UsuarioDestinatarioID, c.Permissao FROM COMPARTILHAMENTOS c
              WHERE c.ImagemID = ?`,
       [imagemId]
     );
 
+    // Renderiza página de compartilhamento
     res.render("share-image", {
       user: req.session.user,
       imagem: imagem,
@@ -377,6 +406,7 @@ router.get("/imagem/:id/share", checkAuth, async (req, res, next) => {
   }
 });
 
+// POST: Processa compartilhamento de imagem
 router.post("/imagem/:id/share", checkAuth, async (req, res, next) => {
   const imagemId = req.params.id;
   const ownerId = req.session.user.id;
@@ -386,6 +416,7 @@ router.post("/imagem/:id/share", checkAuth, async (req, res, next) => {
   try {
     await connection.beginTransaction();
 
+    // Verifica se a imagem pertence ao usuário
     const [imagemCheck] = await connection.query(
       "SELECT ImagemID FROM IMAGENS WHERE ImagemID = ? AND UsuarioID = ?",
       [imagemId, ownerId]
@@ -397,10 +428,12 @@ router.post("/imagem/:id/share", checkAuth, async (req, res, next) => {
         .send("Você não tem permissão para gerenciar esta imagem.");
     }
 
+    // Remove compartilhamentos antigos
     await connection.query("DELETE FROM COMPARTILHAMENTOS WHERE ImagemID = ?", [
       imagemId,
     ]);
 
+    // Adiciona novos compartilhamentos
     if (compartilhamentos && Array.isArray(compartilhamentos)) {
       for (const comp of compartilhamentos) {
         if (
@@ -417,6 +450,7 @@ router.post("/imagem/:id/share", checkAuth, async (req, res, next) => {
 
     await connection.commit();
 
+    // Redireciona para o álbum da imagem
     const [albumLink] = await db.query(
       "SELECT AlbumID FROM IMAGEM_ALBUNS WHERE ImagemID = ? LIMIT 1",
       [imagemId]
@@ -435,8 +469,10 @@ router.post("/imagem/:id/share", checkAuth, async (req, res, next) => {
   }
 });
 
+// Redireciona rota raiz para home
 router.get("/", checkAuth, async (req, res) => {
   res.redirect("/");
 });
 
+// Exporta o router para uso no app principal
 module.exports = router;

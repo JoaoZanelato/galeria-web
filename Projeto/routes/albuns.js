@@ -1,9 +1,13 @@
+// Importa o módulo express para criar rotas
 const express = require("express");
+// Cria um novo roteador do Express
 const router = express.Router();
+// Importa o módulo de acesso ao banco de dados
 const db = require("../db/db");
-const { cloudinary } = require("../config/cloudinary"); // Importar cloudinary
+// Importa o Cloudinary para manipulação de imagens
+const { cloudinary } = require("../config/cloudinary");
 
-// Middleware para verificar autenticação
+// Middleware para verificar autenticação do usuário
 function checkAuth(req, res, next) {
   if (!req.session.user) {
     return res.redirect("/auth/login");
@@ -11,7 +15,10 @@ function checkAuth(req, res, next) {
   next();
 }
 
-/* GET para a página de um álbum específico (Visualização do Álbum) */
+/* GET para a página de um álbum específico (Visualização do Álbum)
+   Busca o álbum pelo ID, verifica se o usuário é dono ou tem permissão de acesso,
+   carrega imagens, amigos do dono e compartilhamentos existentes.
+*/
 router.get("/:id", checkAuth, async function (req, res, next) {
   const albumId = req.params.id;
   const user = req.session.user;
@@ -62,6 +69,7 @@ router.get("/:id", checkAuth, async function (req, res, next) {
     let amigosDoDono = [];
     let compartilhamentosExistentes = [];
 
+    // Se o usuário é dono, busca amigos e compartilhamentos do álbum
     if (isAlbumOwner) {
       const donoId = albumToRender.UsuarioID;
 
@@ -83,6 +91,7 @@ router.get("/:id", checkAuth, async function (req, res, next) {
       );
     }
 
+    // Busca todas as tags e categorias do usuário para filtros
     const [allUserTags] = await db.query(
       "SELECT TagID, Nome FROM TAGS WHERE UsuarioID = ? ORDER BY Nome ASC",
       [user.id]
@@ -91,6 +100,7 @@ router.get("/:id", checkAuth, async function (req, res, next) {
       "SELECT CategoriaID, Nome FROM CATEGORIAS ORDER BY Nome ASC"
     );
 
+    // Renderiza a página de detalhes do álbum
     res.render("album-detail", {
       user: user,
       album: albumToRender,
@@ -110,7 +120,9 @@ router.get("/:id", checkAuth, async function (req, res, next) {
   }
 });
 
-// ROTA GET PARA A PÁGINA DE EDIÇÃO DO ÁLBUM
+/* GET para a página de edição do álbum
+   Permite ao dono editar nome e descrição do álbum.
+*/
 router.get("/:id/edit", checkAuth, async (req, res, next) => {
   const albumId = req.params.id;
   const usuarioId = req.session.user.id;
@@ -138,7 +150,7 @@ router.get("/:id/edit", checkAuth, async (req, res, next) => {
   }
 });
 
-// ROTA POST PARA ATUALIZAR O ÁLBUM
+/* POST para atualizar o álbum (nome e descrição) */
 router.post("/:id/edit", checkAuth, async (req, res, next) => {
   const albumId = req.params.id;
   const usuarioId = req.session.user.id;
@@ -177,9 +189,9 @@ router.post("/:id/edit", checkAuth, async (req, res, next) => {
   }
 });
 
-/**
- * Rota GET para a página de gerenciamento de compartilhamento de um álbum específico.
- */
+/* GET para a página de compartilhamento do álbum
+   Permite ao dono compartilhar o álbum com amigos e gerenciar permissões.
+*/
 router.get("/:id/compartilhar", checkAuth, async function (req, res, next) {
   const albumId = req.params.id;
   const user = req.session.user;
@@ -199,6 +211,7 @@ router.get("/:id/compartilhar", checkAuth, async function (req, res, next) {
         );
     }
 
+    // Busca amigos do dono do álbum
     const donoId = album.UsuarioID;
     const [amigosDoDono] = await db.query(
       `SELECT a.AmizadeID, u.UsuarioID, u.NomeUsuario
@@ -209,6 +222,7 @@ router.get("/:id/compartilhar", checkAuth, async function (req, res, next) {
       [donoId, donoId, donoId]
     );
 
+    // Busca compartilhamentos já existentes do álbum
     const [compartilhamentosExistentes] = await db.query(
       `SELECT c.CompartilhamentoID, c.UsuarioDestinatarioID, u.NomeUsuario, c.Permissao
              FROM COMPARTILHAMENTOS c
@@ -217,6 +231,7 @@ router.get("/:id/compartilhar", checkAuth, async function (req, res, next) {
       [albumId]
     );
 
+    // Renderiza página de compartilhamento do álbum
     res.render("share-album", {
       title: "Compartilhar: " + album.Nome,
       user: user,
@@ -235,9 +250,10 @@ router.get("/:id/compartilhar", checkAuth, async function (req, res, next) {
   }
 });
 
-/**
- * Rota POST para deletar um álbum.
- */
+/* POST para deletar um álbum
+   Remove o álbum e as imagens associadas (se não estiverem em outros álbuns).
+   Remove também do Cloudinary.
+*/
 router.post("/:id/delete", checkAuth, async (req, res, next) => {
   const albumId = req.params.id;
   const usuarioId = req.session.user.id;
@@ -246,6 +262,7 @@ router.post("/:id/delete", checkAuth, async (req, res, next) => {
   try {
     await connection.beginTransaction();
 
+    // Verifica se o usuário é dono do álbum
     const [albuns] = await connection.query(
       "SELECT * FROM ALBUNS WHERE AlbumID = ? AND UsuarioID = ?",
       [albumId, usuarioId]
@@ -257,11 +274,13 @@ router.post("/:id/delete", checkAuth, async (req, res, next) => {
         .send("Você não tem permissão para deletar este álbum.");
     }
 
+    // Busca imagens do álbum
     const [imagensNoAlbum] = await connection.query(
       "SELECT ImagemID, NomeArquivo FROM IMAGENS WHERE ImagemID IN (SELECT ImagemID FROM IMAGEM_ALBUNS WHERE AlbumID = ?)",
       [albumId]
     );
 
+    // Para cada imagem, verifica se está em outros álbuns antes de deletar
     for (const imagem of imagensNoAlbum) {
       const [contagemAlbuns] = await connection.query(
         "SELECT COUNT(*) as count FROM IMAGEM_ALBUNS WHERE ImagemID = ?",
@@ -269,13 +288,16 @@ router.post("/:id/delete", checkAuth, async (req, res, next) => {
       );
 
       if (contagemAlbuns[0].count === 1) {
+        // Remove do Cloudinary
         await cloudinary.uploader.destroy(imagem.NomeArquivo);
+        // Remove do banco
         await connection.query("DELETE FROM IMAGENS WHERE ImagemID = ?", [
           imagem.ImagemID,
         ]);
       }
     }
 
+    // Remove o álbum do banco
     await connection.query("DELETE FROM ALBUNS WHERE AlbumID = ?", [albumId]);
 
     await connection.commit();
@@ -289,9 +311,9 @@ router.post("/:id/delete", checkAuth, async (req, res, next) => {
   }
 });
 
-/**
- * Rota POST para gerenciar compartilhamento de álbum.
- */
+/* POST para gerenciar compartilhamento de álbum
+   Atualiza permissões de compartilhamento e emite eventos via websocket.
+*/
 router.post("/:id/share", checkAuth, async (req, res, next) => {
   const albumId = req.params.id;
   const ownerId = req.session.user.id;
@@ -302,6 +324,7 @@ router.post("/:id/share", checkAuth, async (req, res, next) => {
   try {
     await connection.beginTransaction();
 
+    // Verifica se o usuário é dono do álbum
     const [albumCheck] = await connection.query(
       "SELECT UsuarioID, Nome FROM ALBUNS WHERE AlbumID = ? AND UsuarioID = ?",
       [albumId, ownerId]
@@ -315,10 +338,12 @@ router.post("/:id/share", checkAuth, async (req, res, next) => {
     const nomeAlbum = albumCheck[0].Nome;
     const nomeRemetente = req.session.user.nome;
 
+    // Remove compartilhamentos antigos
     await connection.query("DELETE FROM COMPARTILHAMENTOS WHERE AlbumID = ?", [
       albumId,
     ]);
 
+    // Adiciona novos compartilhamentos conforme permissões
     if (compartilhamentos && compartilhamentos.length > 0) {
       for (const comp of compartilhamentos) {
         // Se for 'nao_compartilhado', simplesmente não insere.
@@ -331,6 +356,7 @@ router.post("/:id/share", checkAuth, async (req, res, next) => {
             [ownerId, comp.friendId, albumId, comp.permissao]
           );
 
+          // Emite evento websocket para o destinatário
           io.to(comp.friendId.toString()).emit("novo_compartilhamento", {
             message: `${nomeRemetente} compartilhou o álbum "${nomeAlbum}" com você.`,
             tipo: "album",
@@ -340,24 +366,20 @@ router.post("/:id/share", checkAuth, async (req, res, next) => {
     }
 
     await connection.commit();
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Permissões de compartilhamento atualizadas com sucesso!",
-      });
+    res.status(200).json({
+      success: true,
+      message: "Permissões de compartilhamento atualizadas com sucesso!",
+    });
   } catch (err) {
     await connection.rollback();
     console.error("Erro ao gerenciar compartilhamento de álbum:", err);
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Erro interno ao atualizar permissões.",
-      });
+    res.status(500).json({
+      success: false,
+      message: "Erro interno ao atualizar permissões.",
+    });
   } finally {
     if (connection) connection.release();
   }
 });
 
-module.exports = router;
+// Exporta o roteador para ser usado em

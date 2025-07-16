@@ -1,4 +1,6 @@
+// Aguarda o carregamento completo do DOM antes de executar o script
 document.addEventListener("DOMContentLoaded", () => {
+  // Seleciona os elementos principais da área de upload
   const dropZone = document.getElementById("dropZone");
   const fileInput = document.getElementById("fileInput");
   const dropZoneText = document.querySelector(".drop-zone__text");
@@ -12,7 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  // *** AQUI ESTÁ A LÓGICA DO CLIQUE ***
+  // *** LÓGICA DO CLIQUE NA ÁREA DE UPLOAD ***
   // Aciona o clique no input de arquivo escondido quando a área de upload é clicada.
   dropZone.addEventListener("click", () => {
     fileInput.click();
@@ -24,6 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
     dropZone.classList.add("drag-over");
   });
 
+  // Remove o efeito visual quando o usuário para de arrastar
   ["dragleave", "dragend"].forEach((type) => {
     dropZone.addEventListener(type, () => {
       dropZone.classList.remove("drag-over");
@@ -74,9 +77,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const albumExistenteGroup = document.getElementById("albumExistenteGroup");
   const albumNovoGroup = document.getElementById("albumNovoGroup");
 
+  // Só executa se os elementos de grupo de álbum existirem
   if (radios.length > 0 && albumExistenteGroup && albumNovoGroup) {
     radios.forEach((radio) => {
       radio.addEventListener("change", (e) => {
+        // Mostra ou esconde os campos conforme a opção selecionada
         if (e.target.value === "novo") {
           albumExistenteGroup.style.display = "none";
           albumNovoGroup.style.display = "block";
