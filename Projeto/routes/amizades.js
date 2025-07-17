@@ -1,10 +1,6 @@
 // routes/amizades.js
-
-// Importa o módulo express para criar rotas
 const express = require('express');
-// Cria um novo roteador do Express
 const router = express.Router();
-// Importa o módulo de acesso ao banco de dados
 const db = require('../db/db'); // Seu pool de conexões com o banco
 
 // Middleware para verificar se o usuário está logado (pode ser reutilizado de galeria.js)
@@ -22,7 +18,7 @@ router.get('/', checkAuth, async (req, res, next) => {
     try {
         // Buscar solicitações de amizade PENDENTES enviadas PARA o usuário logado
         const [solicitacoesRecebidas] = await db.query(
-            `SELECT a.AmizadeID, u.NomeUsuario 
+            `SELECT a.AmizadeID, u.NomeUsuario
              FROM AMIZADES a
              JOIN USUARIOS u ON a.UsuarioSolicitanteID = u.UsuarioID
              WHERE a.UsuarioAceitanteID = ? AND a.Status = 'pendente'`,
@@ -31,7 +27,7 @@ router.get('/', checkAuth, async (req, res, next) => {
 
         // Buscar amigos (solicitações aceitas) do usuário logado
         const [meusAmigos] = await db.query(
-            `SELECT a.AmizadeID, u.UsuarioID, u.NomeUsuario 
+            `SELECT a.AmizadeID, u.UsuarioID, u.NomeUsuario
              FROM AMIZADES a
              JOIN USUARIOS u ON (a.UsuarioSolicitanteID = u.UsuarioID OR a.UsuarioAceitanteID = u.UsuarioID)
              WHERE (a.UsuarioSolicitanteID = ? OR a.UsuarioAceitanteID = ?) AND a.Status = 'aceita'
@@ -39,7 +35,6 @@ router.get('/', checkAuth, async (req, res, next) => {
             [userId, userId, userId]
         );
 
-        // Renderiza a página de amizades com as solicitações e amigos
         res.render('amizades', {
             title: 'Meus Amigos',
             user: req.session.user,
@@ -66,8 +61,9 @@ router.post('/buscar', checkAuth, async (req, res, next) => {
     }
 
     try {
-        // Buscar usuários que não são o próprio usuário logado,
-        // que não são amigos e para quem não há uma solicitação pendente já enviada ou recebida
+        // Buscar usuários que não são o próprio usuário logado
+        // E que não são amigos (status 'aceita')
+        // E para quem não há uma solicitação pendente já enviada ou recebida
         const [usuariosEncontrados] = await db.query(
             `SELECT UsuarioID, NomeUsuario
              FROM USUARIOS
@@ -87,14 +83,14 @@ router.post('/buscar', checkAuth, async (req, res, next) => {
 
         // Recarrega os dados da página de amigos para manter o estado
         const [solicitacoesRecebidas] = await db.query(
-            `SELECT a.AmizadeID, u.NomeUsuario 
+            `SELECT a.AmizadeID, u.NomeUsuario
              FROM AMIZADES a
              JOIN USUARIOS u ON a.UsuarioSolicitanteID = u.UsuarioID
              WHERE a.UsuarioAceitanteID = ? AND a.Status = 'pendente'`,
             [userId]
         );
         const [meusAmigos] = await db.query(
-            `SELECT a.AmizadeID, u.UsuarioID, u.NomeUsuario 
+            `SELECT a.AmizadeID, u.UsuarioID, u.NomeUsuario
              FROM AMIZADES a
              JOIN USUARIOS u ON (a.UsuarioSolicitanteID = u.UsuarioID OR a.UsuarioAceitanteID = u.UsuarioID)
              WHERE (a.UsuarioSolicitanteID = ? OR a.UsuarioAceitanteID = ?) AND a.Status = 'aceita'
@@ -102,7 +98,7 @@ router.post('/buscar', checkAuth, async (req, res, next) => {
             [userId, userId, userId]
         );
 
-        // Renderiza a página de amizades com os resultados da busca
+
         res.render('amizades', {
             title: 'Meus Amigos',
             user: req.session.user,
@@ -119,6 +115,7 @@ router.post('/buscar', checkAuth, async (req, res, next) => {
         next(err);
     }
 });
+
 
 /* POST Rota para enviar uma solicitação de amizade */
 router.post('/solicitar/:destinatarioId', checkAuth, async (req, res, next) => {
@@ -153,8 +150,8 @@ router.post('/solicitar/:destinatarioId', checkAuth, async (req, res, next) => {
             [solicitanteId, destinatarioId, 'pendente']
         );
         
-        // EMITIR EVENTO WEBSOCKET para o destinatário
-        io.to(destinatarioId.toString()).emit('nova_solicitacao', { 
+        // EMITIR EVENTO WEBSOCKET
+        io.to(destinatarioId.toString()).emit('nova_solicitacao', {
             message: `Você recebeu uma nova solicitação de amizade de ${solicitanteNome}.`,
             remetente: solicitanteNome
         });
@@ -192,7 +189,6 @@ router.post('/responder/:amizadeId', checkAuth, async (req, res, next) => {
         let novoStatus = acao === 'aceitar' ? 'aceita' : 'recusada';
         let dataInicioAmizade = acao === 'aceitar' ? new Date() : null;
 
-        // Atualiza o status da amizade no banco
         await db.query(
             'UPDATE AMIZADES SET Status = ?, DataInicioAmizade = ? WHERE AmizadeID = ?',
             [novoStatus, dataInicioAmizade, amizadeId]
@@ -222,24 +218,40 @@ router.post('/remover/:amizadeId', checkAuth, async (req, res, next) => {
     const amizadeId = req.params.amizadeId;
     const userId = req.session.user.id; // O usuário que está tentando remover
     const io = req.io;
+    const connection = await db.getConnection(); // Adicionar conexão para transação
 
     try {
+        await connection.beginTransaction(); // Iniciar transação
+
         // Verifica se a amizade existe e se um dos usuários é o logado (para evitar remoção indevida)
-        const [amizade] = await db.query(
+        const [amizade] = await connection.query(
             `SELECT * FROM AMIZADES WHERE AmizadeID = ? AND (UsuarioSolicitanteID = ? OR UsuarioAceitanteID = ?)`,
             [amizadeId, userId, userId]
         );
 
         if (amizade.length === 0) {
+            await connection.rollback(); // Desfazer transação
             return res.status(404).json({ message: 'Amizade não encontrada ou você não tem permissão.' });
         }
         
-        // Descobre o outro usuário envolvido na amizade
-        const outroUsuarioId = amizade[0].UsuarioSolicitanteID === userId ? amizade[0].UsuarioAceitanteID : amizade[0].UsuarioSolicitanteID;
+        const solicitanteId = amizade[0].UsuarioSolicitanteID;
+        const aceitanteId = amizade[0].UsuarioAceitanteID;
+        const outroUsuarioId = solicitanteId === userId ? aceitanteId : solicitanteId;
         const nomeUsuarioLogado = req.session.user.nome;
 
-        // Remove a amizade do banco
-        await db.query('DELETE FROM AMIZADES WHERE AmizadeID = ?', [amizadeId]);
+        // --- NOVO PASSO: Remover compartilhamentos relacionados a esta amizade ---
+        // Remove compartilhamentos onde o usuário logado é o remetente E o outro usuário é o destinatário
+        await connection.query(
+            `DELETE FROM COMPARTILHAMENTOS
+             WHERE (UsuarioRemetenteID = ? AND UsuarioDestinatarioID = ?)
+             OR (UsuarioRemetenteID = ? AND UsuarioDestinatarioID = ?)`,
+            [userId, outroUsuarioId, outroUsuarioId, userId]
+        );
+
+        // Remove a própria amizade
+        await connection.query('DELETE FROM AMIZADES WHERE AmizadeID = ?', [amizadeId]);
+
+        await connection.commit(); // Confirmar transação
 
         // EMITIR EVENTO WEBSOCKET para o outro usuário
         io.to(outroUsuarioId.toString()).emit('amizade_removida', {
@@ -249,10 +261,12 @@ router.post('/remover/:amizadeId', checkAuth, async (req, res, next) => {
         res.json({ success: true, message: 'Amizade removida com sucesso.' });
 
     } catch (err) {
+        await connection.rollback(); // Desfazer transação em caso de erro
         console.error('Erro ao remover amizade:', err);
         res.status(500).json({ success: false, message: 'Erro interno ao remover amizade.' });
+    } finally {
+        if (connection) connection.release(); // Sempre liberar a conexão
     }
 });
 
-// Exporta o roteador para ser usado em outros
 module.exports = router;
