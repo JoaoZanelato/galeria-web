@@ -1,10 +1,10 @@
 // Importação dos módulos necessários
-const express = require("express");
-const router = express.Router();
-const multer = require("multer");
-const { storage, cloudinary } = require("../config/cloudinary");
-const upload = multer({ storage });
-const db = require("../db/db");
+const express = require("express"); // Framework para rotas e servidor web
+const router = express.Router(); // Cria um roteador do Express
+const multer = require("multer"); // Middleware para upload de arquivos
+const { storage, cloudinary } = require("../config/cloudinary"); // Configuração do Cloudinary e storage para uploads
+const upload = multer({ storage }); // Configura o multer para usar o Cloudinary
+const db = require("../db/db"); // Pool de conexões com o banco de dados
 
 // Middleware para verificar se o usuário está logado
 function checkAuth(req, res, next) {
@@ -466,7 +466,7 @@ router.post("/imagem/:id/delete", checkAuth, async (req, res, next) => {
 });
 
 // ===================================================================
-//      ROTAS PARA COMPARTILHAMENTO DE IMAGEM INDIVIDUAL
+//      ROTAS PARA COMPARTILHAMENTO DE IMAGEM INDIVIDUAL
 // ===================================================================
 
 // GET: Exibe página de compartilhamento de imagem

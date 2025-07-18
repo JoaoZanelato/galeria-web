@@ -1,9 +1,13 @@
 // routes/amizades.js
+
+// Importa o módulo express para criar rotas
 const express = require('express');
+// Cria um novo roteador do Express
 const router = express.Router();
+// Importa o módulo de acesso ao banco de dados
 const db = require('../db/db'); // Seu pool de conexões com o banco
 
-// Middleware para verificar se o usuário está logado (pode ser reutilizado de galeria.js)
+// Middleware para verificar se o usuário está logado
 function checkAuth(req, res, next) {
     if (!req.session.user) {
         return res.redirect('/auth/login');
@@ -35,6 +39,7 @@ router.get('/', checkAuth, async (req, res, next) => {
             [userId, userId, userId]
         );
 
+        // Renderiza a página de amizades com as solicitações e amigos
         res.render('amizades', {
             title: 'Meus Amigos',
             user: req.session.user,
@@ -56,14 +61,14 @@ router.post('/buscar', checkAuth, async (req, res, next) => {
     const userId = req.session.user.id;
     const { termoBusca } = req.body;
 
+    // Se o termo de busca estiver vazio, redireciona de volta
     if (!termoBusca || termoBusca.trim() === '') {
-        return res.redirect('/amizades'); // Redireciona de volta se o termo estiver vazio
+        return res.redirect('/amizades');
     }
 
     try {
-        // Buscar usuários que não são o próprio usuário logado
-        // E que não são amigos (status 'aceita')
-        // E para quem não há uma solicitação pendente já enviada ou recebida
+        // Buscar usuários que não são o próprio usuário logado,
+        // que não são amigos e para quem não há uma solicitação pendente já enviada ou recebida
         const [usuariosEncontrados] = await db.query(
             `SELECT UsuarioID, NomeUsuario
              FROM USUARIOS
@@ -98,7 +103,7 @@ router.post('/buscar', checkAuth, async (req, res, next) => {
             [userId, userId, userId]
         );
 
-
+        // Renderiza a página de amizades com os resultados da busca
         res.render('amizades', {
             title: 'Meus Amigos',
             user: req.session.user,
@@ -116,7 +121,6 @@ router.post('/buscar', checkAuth, async (req, res, next) => {
     }
 });
 
-
 /* POST Rota para enviar uma solicitação de amizade */
 router.post('/solicitar/:destinatarioId', checkAuth, async (req, res, next) => {
     const solicitanteId = req.session.user.id;
@@ -124,6 +128,7 @@ router.post('/solicitar/:destinatarioId', checkAuth, async (req, res, next) => {
     const solicitanteNome = req.session.user.nome;
     const io = req.io;
 
+    // Impede que o usuário envie solicitação para si mesmo
     if (solicitanteId == destinatarioId) {
         return res.status(400).json({ message: 'Você não pode enviar solicitação para si mesmo.' });
     }
@@ -144,13 +149,13 @@ router.post('/solicitar/:destinatarioId', checkAuth, async (req, res, next) => {
             return res.json({ success: false, message: 'Vocês já são amigos.' });
         }
         
-        // Insere a nova solicitação
+        // Insere a nova solicitação de amizade
         await db.query(
             'INSERT INTO AMIZADES (UsuarioSolicitanteID, UsuarioAceitanteID, Status) VALUES (?, ?, ?)',
             [solicitanteId, destinatarioId, 'pendente']
         );
         
-        // EMITIR EVENTO WEBSOCKET
+        // EMITIR EVENTO WEBSOCKET para o destinatario
         io.to(destinatarioId.toString()).emit('nova_solicitacao', {
             message: `Você recebeu uma nova solicitação de amizade de ${solicitanteNome}.`,
             remetente: solicitanteNome
@@ -171,6 +176,7 @@ router.post('/responder/:amizadeId', checkAuth, async (req, res, next) => {
     const { acao } = req.body; // 'aceitar' ou 'recusar'
     const io = req.io;
 
+    // Valida a ação recebida
     if (acao !== 'aceitar' && acao !== 'recusar') {
         return res.status(400).json({ message: 'Ação inválida.' });
     }
@@ -189,6 +195,7 @@ router.post('/responder/:amizadeId', checkAuth, async (req, res, next) => {
         let novoStatus = acao === 'aceitar' ? 'aceita' : 'recusada';
         let dataInicioAmizade = acao === 'aceitar' ? new Date() : null;
 
+        // Atualiza o status da amizade no banco
         await db.query(
             'UPDATE AMIZADES SET Status = ?, DataInicioAmizade = ? WHERE AmizadeID = ?',
             [novoStatus, dataInicioAmizade, amizadeId]
@@ -218,10 +225,10 @@ router.post('/remover/:amizadeId', checkAuth, async (req, res, next) => {
     const amizadeId = req.params.amizadeId;
     const userId = req.session.user.id; // O usuário que está tentando remover
     const io = req.io;
-    const connection = await db.getConnection(); // Adicionar conexão para transação
+    const connection = await db.getConnection(); // Adiciona conexão para transação
 
     try {
-        await connection.beginTransaction(); // Iniciar transação
+        await connection.beginTransaction(); // Inicia transação
 
         // Verifica se a amizade existe e se um dos usuários é o logado (para evitar remoção indevida)
         const [amizade] = await connection.query(
@@ -230,10 +237,11 @@ router.post('/remover/:amizadeId', checkAuth, async (req, res, next) => {
         );
 
         if (amizade.length === 0) {
-            await connection.rollback(); // Desfazer transação
+            await connection.rollback(); // Desfaz transação
             return res.status(404).json({ message: 'Amizade não encontrada ou você não tem permissão.' });
         }
         
+        // Descobre o outro usuário envolvido na amizade
         const solicitanteId = amizade[0].UsuarioSolicitanteID;
         const aceitanteId = amizade[0].UsuarioAceitanteID;
         const outroUsuarioId = solicitanteId === userId ? aceitanteId : solicitanteId;
@@ -251,7 +259,7 @@ router.post('/remover/:amizadeId', checkAuth, async (req, res, next) => {
         // Remove a própria amizade
         await connection.query('DELETE FROM AMIZADES WHERE AmizadeID = ?', [amizadeId]);
 
-        await connection.commit(); // Confirmar transação
+        await connection.commit(); // Confirma transação
 
         // EMITIR EVENTO WEBSOCKET para o outro usuário
         io.to(outroUsuarioId.toString()).emit('amizade_removida', {
@@ -261,12 +269,13 @@ router.post('/remover/:amizadeId', checkAuth, async (req, res, next) => {
         res.json({ success: true, message: 'Amizade removida com sucesso.' });
 
     } catch (err) {
-        await connection.rollback(); // Desfazer transação em caso de erro
+        await connection.rollback(); // Desfaz transação em caso de erro
         console.error('Erro ao remover amizade:', err);
         res.status(500).json({ success: false, message: 'Erro interno ao remover amizade.' });
     } finally {
-        if (connection) connection.release(); // Sempre liberar a conexão
+        if (connection) connection.release(); // Sempre libera a conexão
     }
 });
 
+// Exporta o roteador para ser usado em outros módulos
 module.exports = router;
