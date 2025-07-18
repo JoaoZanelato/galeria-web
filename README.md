@@ -123,9 +123,6 @@ Aqui está uma lista detalhada de todas as rotas da aplicação, agrupadas por f
     CLOUDINARY_CLOUD_NAME=...
     CLOUDINARY_KEY=...
     CLOUDINARY_SECRET=...
-
-    # Segredo da Sessão Express
-    SESSION_SECRET=seu_segredo_super_secreto_aqui
     ```
 
 4.  **Inicie o servidor:**
