@@ -520,8 +520,6 @@ router.get("/imagem/:id/share", checkAuth, async (req, res, next) => {
       err
     );
     next(err);
-  } finally {
-    if (connection) connection.release();
   }
 });
 
